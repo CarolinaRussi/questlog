@@ -1,72 +1,102 @@
 # QuestLog
 
-Quadro pessoal de trabalho em andamento: **quest** (o que você está tocando), não o card do Jira.
+Quadro pessoal de trabalho em andamento: a unidade é a **quest** (o que você está tocando agora), não o card do Jira.
 
-Local-first · SQLite · API em `127.0.0.1` · hooks do Cursor via CLI.
+Local-first · SQLite na sua máquina · sem cloud obrigatório.
 
-## Pré-requisitos
+## O que você precisa
 
-- [Node.js](https://nodejs.org/) (LTS) e [pnpm](https://pnpm.io/installation)
-- (Opcional) Cursor IDE, se for usar ingest automático de commits
-- (Opcional) credenciais Jira / chave Gemini — o board funciona sem isso
+- [Node.js](https://nodejs.org/) LTS + [pnpm](https://pnpm.io/installation) — só na **primeira vez** (setup / gerar o app)
+- (Opcional) [Cursor](https://cursor.com/) — se quiser ingest automático de commits
+- (Opcional) Jira / Gemini — o board funciona sem isso
 
-## Primeira vez
+## Instalação (primeira vez)
+
+No clone do repositório:
 
 ```bash
 pnpm setup
-```
-
-Copie o env de exemplo e preencha só o que for usar (Jira, porta, data dir):
-
-```bash
 cp .env.example .env
 ```
 
-Crie o perfil inicial:
+Crie o perfil:
 
 ```bash
-pnpm seed -- minimal   # genérico — recomendado se não for o time Gran
+pnpm seed -- minimal   # genérico — use este se não for o time Gran
 # ou
 pnpm seed -- gran      # exemplo HESEC + repos placeholder
 ```
 
-Suba API + web:
+### Opção A — App Windows (recomendado no dia a dia)
+
+Gera o executável (demora alguns minutos na primeira vez):
 
 ```bash
-pnpm start
+pnpm desktop:pack
 ```
 
-Abra **http://127.0.0.1:5173** e no **Settings / wizard**:
+Abra:
 
-1. Paths **absolutos** dos seus repos monitorados  
-2. Regex de ticket / base URL (se usar links)  
+`apps/desktop/release/QuestLog.exe`
+
+- Windows pode avisar que o app **não é assinado** — esperado nesta fase; avance se confiar no build local.
+- Não precisa deixar terminal aberto nem rodar `pnpm start`.
+- Seus dados ficam no data dir do usuário (abaixo), não “dentro” do `.exe`.
+
+Atalho útil: copie `QuestLog.exe` para a Área de Trabalho ou fixe na barra de tarefas.
+
+### Opção B — Pelo monorepo (desenvolvimento)
+
+```bash
+pnpm desktop          # janela Electron (precisa do clone + Node)
+# ou
+pnpm start            # API + Vite no browser → http://127.0.0.1:5173
+```
+
+### Configurar o perfil
+
+Na primeira abertura, no **Settings / wizard**:
+
+1. Paths **absolutos** dos repos que você quer monitorar  
+2. Regex de ticket e base URL (se usar links)  
 3. (Opcional) chave Gemini para resumo de épicos  
 
-Dados locais: `%APPDATA%/questlog/` (Windows), `~/Library/Application Support/questlog` (macOS) ou `$XDG_DATA_HOME/questlog` (Linux).  
+Dados locais:
+
+| SO | Pasta |
+|----|--------|
+| Windows | `%APPDATA%/questlog/` |
+| macOS | `~/Library/Application Support/questlog` |
+| Linux | `$XDG_DATA_HOME/questlog` (ou `~/.local/share/questlog`) |
+
 Override: `QUESTLOG_DATA_DIR` no `.env`.
 
 ## Como abrir de manhã
 
-```bash
-pnpm start
-```
+1. Duplo clique em **QuestLog.exe** (ou `pnpm desktop` / `pnpm start` se estiver desenvolvendo)
+2. Confira quests **Em andamento** e **Pausadas**
+3. Ao pausar, preencha **Falta**
+4. (Opcional) hooks do Cursor → commits entram sozinhos na timeline
+5. (Opcional) Status Jira / `refresh-jira` para título + status
 
-→ http://127.0.0.1:5173
+## Hooks do Cursor (commits → timeline)
 
-### Checklist do dia
-
-1. Board aberto; quests ativas / pausadas visíveis  
-2. Campo **Falta** quando pausar  
-3. (Opcional) hooks do Cursor → commits caem na timeline sozinhos  
-4. (Opcional) **Status Jira** / `refresh-jira` pra título + status  
-
-## Hooks do Cursor (ingest automático)
-
-Sem hooks, o board e o CLI já funcionam. Com hooks, todo `git commit` nos repos do perfil vira timeline.
+Sem hooks, board e CLI já funcionam. Com hooks, `git commit` nos repos do perfil alimenta a timeline **mesmo com o app fechado**.
 
 Passo a passo + arquivos prontos: **[cursor/HOOKS.md](cursor/HOOKS.md)**.
 
-Resumo: copiar `cursor/hooks.user.example.json` → `~/.cursor/hooks.json`, copiar `cursor/hooks/questlog-*` → `~/.cursor/hooks/`, definir `QUESTLOG_ROOT`, reiniciar o Cursor.
+Resumo: copiar exemplos de `cursor/` para `~/.cursor/`, definir `QUESTLOG_ROOT` (caminho deste clone), reiniciar o Cursor.
+
+## Gerar o .exe de novo
+
+Depois de puxar mudanças ou alterar o app:
+
+```bash
+pnpm desktop:pack
+```
+
+Saída: `apps/desktop/release/QuestLog.exe`  
+(Windows only por enquanto; sem auto-update / code signing.)
 
 ## CLI
 
@@ -79,22 +109,13 @@ pnpm --filter @questlog/cli refresh-jira -- --file path/to/issues.json
 pnpm --filter @questlog/cli import-jira -- path/to/export.json
 ```
 
-`ingest-commit` é **fail-open** por padrão (não quebra o `git commit`).  
-Se o ingest falhar depois de ler o commit, o payload vai para `ingest-queue.json` no data dir e é reprocessado no próximo `ingest-commit`.
+`ingest-commit` é **fail-open** (não quebra o `git commit`).  
+Se falhar depois de ler o commit, o payload vai para `ingest-queue.json` no data dir e é reprocessado no próximo ingest.
 
-`refresh-jira` atualiza **só título + status** das tickets já ligadas a quests  
-(nunca a descrição do card). Credenciais: `JIRA_BASE_URL`, `JIRA_EMAIL`,  
-`JIRA_API_TOKEN` no `.env` (ver `.env.example`).
+`refresh-jira` atualiza **só título + status** das tickets já ligadas a quests (nunca a descrição do card).  
+Credenciais: `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` no `.env` (ver `.env.example`).
 
-Resumo de épicos (Gemini): chave em **Settings** na UI (`secrets.json` no data dir).  
-Sem chave o board funciona; o botão de resumo pede configuração.
-
-## Seed de exemplos
-
-```bash
-pnpm seed -- minimal   # um repo genérico
-pnpm seed -- gran      # HESEC + 3 repos placeholder (edite paths depois)
-```
+Resumo de épicos (Gemini): chave em **Settings** na UI (`secrets.json` no data dir).
 
 ## Stack
 
@@ -104,5 +125,6 @@ pnpm seed -- gran      # HESEC + 3 repos placeholder (edite paths depois)
 | `apps/server` | Fastify (`127.0.0.1:8787`) |
 | `apps/web` | Vite · React · Tailwind · TanStack Query |
 | `apps/cli` | seed · ingest-commit · remind · jira |
+| `apps/desktop` | Electron (shell + pack Windows) |
 
 Plano: [questlog-PLAN.md](questlog-PLAN.md).
