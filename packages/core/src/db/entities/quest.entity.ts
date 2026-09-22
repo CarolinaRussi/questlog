@@ -36,6 +36,13 @@ export class Quest extends BaseEntity {
   @Column({ type: "text", default: "" })
   falta!: string;
 
+  /** Last known external ticket status label (e.g. Jira). Read-only sync. */
+  @Column({ name: "ticket_status", type: "text", nullable: true })
+  ticketStatus!: string | null;
+
+  @Column({ name: "ticket_synced_at", type: "datetime", nullable: true })
+  ticketSyncedAt!: Date | null;
+
   @Column({ name: "atualizado_em", type: "datetime" })
   atualizadoEm!: Date;
 
