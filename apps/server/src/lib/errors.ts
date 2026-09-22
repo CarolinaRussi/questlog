@@ -4,6 +4,7 @@ import {
   ProfileRequiredError,
   QuestNotFoundError,
 } from "@questlog/core";
+import { JiraCredentialsMissingError } from "../routes/tickets.routes.js";
 
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error, _request, reply) => {
@@ -25,7 +26,17 @@ export function registerErrorHandler(app: FastifyInstance): void {
       });
     }
 
+    if (error instanceof JiraCredentialsMissingError) {
+      return reply.status(400).send({
+        error: "jira_credentials_missing",
+        message: error.message,
+      });
+    }
+
     app.log.error(error);
-    return reply.status(500).send({ error: "internal_error" });
+    return reply.status(500).send({
+      error: "internal_error",
+      message: error instanceof Error ? error.message : "internal_error",
+    });
   });
 }

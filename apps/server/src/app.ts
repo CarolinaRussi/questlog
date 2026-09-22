@@ -6,6 +6,7 @@ import { registerCommitRoutes } from "./routes/commits.routes.js";
 import { registerHealthRoutes } from "./routes/health.routes.js";
 import { registerProfileRoutes } from "./routes/profile.routes.js";
 import { registerQuestRoutes } from "./routes/quests.routes.js";
+import { registerTicketRoutes } from "./routes/tickets.routes.js";
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -21,6 +22,7 @@ export async function buildApp() {
   await registerProfileRoutes(app);
   await registerQuestRoutes(app);
   await registerCommitRoutes(app);
+  await registerTicketRoutes(app);
 
   return app;
 }
