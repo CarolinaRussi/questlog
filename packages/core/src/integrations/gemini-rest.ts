@@ -10,7 +10,7 @@ type GeminiResponse = {
   error?: { message?: string };
 };
 
-const DEFAULT_MODEL = "gemini-2.0-flash";
+const DEFAULT_MODEL = "gemini-3.6-flash";
 
 /**
  * Call Gemini generateContent and parse JSON { overview, progress }.
