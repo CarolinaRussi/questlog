@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import {
+  GeminiNotConfiguredError,
   ProfileRequiredError,
   QuestNotFoundError,
 } from "@questlog/core";
@@ -29,6 +30,13 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (error instanceof JiraCredentialsMissingError) {
       return reply.status(400).send({
         error: "jira_credentials_missing",
+        message: error.message,
+      });
+    }
+
+    if (error instanceof GeminiNotConfiguredError) {
+      return reply.status(400).send({
+        error: "gemini_not_configured",
         message: error.message,
       });
     }
