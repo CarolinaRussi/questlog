@@ -76,7 +76,7 @@ pnpm --filter @questlog/cli ingest-commit
 pnpm --filter @questlog/cli ingest-commit -- --strict
 pnpm --filter @questlog/cli refresh-jira
 pnpm --filter @questlog/cli refresh-jira -- --file path/to/issues.json
-pnpm --filter @questlog/cli import-jira -- --file path/to/export.json
+pnpm --filter @questlog/cli import-jira -- path/to/export.json
 ```
 
 `ingest-commit` é **fail-open** por padrão (não quebra o `git commit`).  
