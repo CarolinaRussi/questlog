@@ -1,4 +1,6 @@
 import { QUESTLOG_CORE_VERSION } from "@questlog/core";
+import { runIngestCommitCommand } from "./commands/ingest-commit.js";
+import { runRemindCommand } from "./commands/remind.js";
 import { runSeedCommand } from "./commands/seed.js";
 
 function argvCommands(): string[] {
@@ -13,7 +15,12 @@ async function main(): Promise<void> {
     console.log(`questlog (core ${QUESTLOG_CORE_VERSION})
 Commands:
   seed <gran|minimal>   Upsert profile from examples/*.profile.json
-  help                  Show this help`);
+  ingest-commit         Read latest git commit in cwd and store via core (fail-open)
+  remind                Session reminder (quests + API health)
+  help                  Show this help
+
+Flags:
+  ingest-commit --strict   Exit non-zero on failure (default is fail-open)`);
     return;
   }
 
@@ -23,6 +30,18 @@ Commands:
       throw new Error("Usage: questlog seed <gran|minimal>");
     }
     await runSeedCommand(exampleName);
+    return;
+  }
+
+  if (command === "ingest-commit") {
+    await runIngestCommitCommand({
+      strict: args.includes("--strict"),
+    });
+    return;
+  }
+
+  if (command === "remind") {
+    await runRemindCommand();
     return;
   }
 

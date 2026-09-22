@@ -11,7 +11,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "seed": "tsx src/index.ts seed"
+    "seed": "tsx src/index.ts seed",
+    "ingest-commit": "tsx src/index.ts ingest-commit",
+    "remind": "tsx src/index.ts remind"
   },
   "dependencies": {
     "@questlog/core": "workspace:*",
