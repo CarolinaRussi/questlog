@@ -4,6 +4,7 @@ import { ProfileSettings } from "./features/profile/ProfileSettings";
 import { ProfileWizard } from "./features/profile/ProfileWizard";
 import { QuestBoard } from "./features/quests/QuestBoard";
 import { fetchHealth, fetchProfile } from "./shared/lib/api";
+import { useBoardLiveSync } from "./shared/lib/use-board-live-sync";
 
 type Screen = "board" | "settings";
 
@@ -24,6 +25,10 @@ export function App() {
   const apiDown = healthQuery.isError;
   const loading =
     healthQuery.isLoading || (healthQuery.isSuccess && profileQuery.isLoading);
+  const onBoard =
+    !apiDown && !loading && Boolean(profileQuery.data) && screen === "board";
+
+  useBoardLiveSync(onBoard);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-6 py-12">

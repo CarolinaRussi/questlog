@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { registerErrorHandler } from "./lib/errors.js";
+import { registerBoardRoutes } from "./routes/board.routes.js";
 import { registerCommitRoutes } from "./routes/commits.routes.js";
 import { registerHealthRoutes } from "./routes/health.routes.js";
 import { registerProfileRoutes } from "./routes/profile.routes.js";
@@ -16,6 +17,7 @@ export async function buildApp() {
   registerErrorHandler(app);
 
   await registerHealthRoutes(app);
+  await registerBoardRoutes(app);
   await registerProfileRoutes(app);
   await registerQuestRoutes(app);
   await registerCommitRoutes(app);

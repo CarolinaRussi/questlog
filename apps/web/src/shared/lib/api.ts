@@ -67,6 +67,10 @@ export type HealthResponse = {
   core: string;
 };
 
+export type BoardRevision = {
+  revision: string;
+};
+
 async function readError(response: Response): Promise<string> {
   const payload = (await response.json().catch(() => null)) as {
     message?: string;
@@ -80,6 +84,14 @@ export async function fetchHealth(): Promise<HealthResponse> {
     throw new Error(`API health failed (${response.status})`);
   }
   return (await response.json()) as HealthResponse;
+}
+
+export async function fetchBoardRevision(): Promise<BoardRevision> {
+  const response = await fetch("/api/board-revision");
+  if (!response.ok) {
+    throw new Error(`Failed to load board revision (${response.status})`);
+  }
+  return (await response.json()) as BoardRevision;
 }
 
 export async function fetchProfile(): Promise<Profile | null> {

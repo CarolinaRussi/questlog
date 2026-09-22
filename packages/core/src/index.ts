@@ -59,6 +59,10 @@ export {
   pickBestQuestByTickets,
 } from "./use-cases/ticket-match.js";
 export { listCommits } from "./use-cases/list-commits.js";
+export {
+  getBoardRevision,
+  type BoardRevision,
+} from "./use-cases/board-revision.js";
 
 export { seedProfile } from "./use-cases/seed.js";
 export { importJiraIssues } from "./use-cases/jira-import.js";
