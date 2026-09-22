@@ -287,6 +287,36 @@ Decisões travadas:
 
 Critério de pronto = **5.1–5.6** verdes. Multi-modelo / Ollama = futuro.
 
+### Fase 6 — UX “agora” (grilling travado)
+
+Job: acompanhar o que está em andamento (`falta`) e lembrar o que foi feito (currículo) — **sem** mini-Jira na home.
+
+Decisões travadas:
+1. Home = foco no **agora**
+2. Home = só **em acompanhamento** (não as ~470 do import)
+3. Cards = **épico** + **próxima falta** visível
+4. Detalhe: **falta → tarefas → ações → resumo Gemini**
+5. Chrome: **Nova quest** discreta; refresh/inbox/arquivo/settings fora do 1º viewport
+6. Promove: implícito (ativa / falta user / commit) **+** CTA no Arquivo
+7. Falta no card: ativa do ingest → pausada com falta real → fallback
+8. Currículo: detalhe + **Copiar resumo** (página Memória depois)
+9. Empty: **guiado** com sugestões + Retomar
+10. Arquivo: **épicos + sugestões + busca**
+11. Schema: **`falta_source`** (`user` \| `import`) + **`watching`**
+
+“Em acompanhamento” = `status=ativa` **ou** `watching=true` **ou** (`pausada` ∧ `falta_source=user`) **ou** tem commit ligado.
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **6.1** | Migration `falta_source` + `watching` + backfill stub `Status no Jira:` | `feat(core): quest falta source and watching` |
+| **6.2** | `listAccompanied` / `promoteQuest` / pickNextFalta + checks | `feat(core): accompanied quests and promote` |
+| **6.3** | Server: filtros accompanied/archive + promote endpoint | `feat(server): accompanied and archive api` |
+| **6.4** | Web home: épicos acompanhados + falta no card + chrome limpo | `feat(web): focus home on accompanied epics` |
+| **6.5** | Web detalhe: hierarquia A + Copiar resumo | `feat(web): epic detail continuity hierarchy` |
+| **6.6** | Web: empty guiado + Arquivo (épicos/sugestões/busca) + promote | `feat(web): archive and guided empty state` |
+
+Critério de pronto = **6.1–6.6** verdes.
+
 ### Fase 4 — App instalável
 
 - Shell desktop reusando `core` + API local
