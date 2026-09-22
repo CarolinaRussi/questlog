@@ -84,11 +84,11 @@ export function EpicDetailPanel({
   });
 
   const geminiConfigured = secretsQuery.data?.geminiConfigured ?? false;
-  const continuityQuests = quests.filter(
+  const faltaQuests = quests.filter(
     (quest) =>
       quest.status !== "feita" &&
-      ((quest.faltaSource === "user" && quest.falta.trim()) ||
-        quest.id === selectedQuestId),
+      quest.faltaSource === "user" &&
+      quest.falta.trim().length > 0,
   );
 
   return (
@@ -118,27 +118,28 @@ export function EpicDetailPanel({
         <h4 className="text-sm font-semibold uppercase tracking-wide">
           O que falta
         </h4>
-        {continuityQuests.length === 0 ? (
+        {faltaQuests.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
             Nenhuma falta registrada ainda. Pause uma tarefa e anote o que
             falta.
           </p>
         ) : (
-          continuityQuests.map((quest) => (
-            <div
+          faltaQuests.map((quest) => (
+            <button
               key={quest.id}
-              className="rounded-xl px-3 py-3"
+              type="button"
+              onClick={() => onSelectQuest(quest.id)}
+              className="w-full rounded-xl px-3 py-3 text-left"
               style={{ background: "#f0fdf4" }}
             >
-              <p className="text-xs font-semibold uppercase tracking-wide">
-                {quest.titulo}
+              <p className="text-base font-medium leading-snug">{quest.falta}</p>
+              <p
+                className="mt-1 text-xs"
+                style={{ color: "var(--ql-muted)" }}
+              >
+                em {quest.titulo}
               </p>
-              <p className="mt-1 text-base font-medium">
-                {quest.faltaSource === "user" && quest.falta.trim()
-                  ? quest.falta
-                  : "—"}
-              </p>
-            </div>
+            </button>
           ))
         )}
       </div>
@@ -150,33 +151,49 @@ export function EpicDetailPanel({
         {quests.map((quest) => {
           const selected = quest.id === selectedQuestId;
           return (
-            <button
+            <div
               key={quest.id}
-              type="button"
-              onClick={() => onSelectQuest(quest.id)}
-              className="w-full rounded-xl border px-3 py-2.5 text-left transition"
+              className="overflow-hidden rounded-xl border"
               style={{
                 borderColor: selected ? "var(--ql-accent)" : "var(--ql-border)",
                 background: selected ? "#f0fdfa" : "#fff",
               }}
             >
-              <p className="font-medium leading-snug">{quest.titulo}</p>
-              <p className="mt-0.5 text-sm" style={{ color: "var(--ql-muted)" }}>
-                {statusLabel(quest.status)}
-                {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
-              </p>
-            </button>
+              <button
+                type="button"
+                onClick={() => onSelectQuest(quest.id)}
+                className="w-full px-3 py-2.5 text-left"
+              >
+                <p className="font-medium leading-snug">{quest.titulo}</p>
+                <p
+                  className="mt-0.5 text-sm"
+                  style={{ color: "var(--ql-muted)" }}
+                >
+                  {statusLabel(quest.status)}
+                  {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
+                </p>
+              </button>
+              {selected ? (
+                <div
+                  className="border-t px-3 py-3"
+                  style={{ borderColor: "var(--ql-border)" }}
+                >
+                  {questActions ?? (
+                    <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+                      Sem ações disponíveis.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </div>
           );
         })}
+        {!selectedQuestId ? (
+          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+            Clique numa tarefa para pausar, retomar ou marcar feita.
+          </p>
+        ) : null}
       </div>
-
-      {selectedQuestId ? (
-        questActions
-      ) : (
-        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-          Clique numa tarefa para pausar, retomar ou marcar feita.
-        </p>
-      )}
 
       <div
         className="space-y-3 rounded-xl border px-3 py-3"

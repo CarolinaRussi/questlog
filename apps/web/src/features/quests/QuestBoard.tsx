@@ -788,11 +788,7 @@ function QuestActionsBlock({
   onFinish: () => void;
 }) {
   return (
-    <div
-      className="space-y-3 rounded-xl border px-3 py-3"
-      style={{ borderColor: "var(--ql-border)" }}
-    >
-      <p className="text-sm font-semibold">{quest.titulo}</p>
+    <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {quest.status === "pausada" || quest.status === "feita" ? (
           <button
