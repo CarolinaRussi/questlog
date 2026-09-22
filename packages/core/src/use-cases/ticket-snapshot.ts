@@ -1,0 +1,121 @@
+import { Quest } from "../db/entities/quest.entity.js";
+import { normalizeTicketId } from "./ticket-match.js";
+import { getProfile } from "./profile.js";
+import { ProfileRequiredError } from "./quest.js";
+import {
+  ticketSnapshotsInputSchema,
+  type TicketSnapshot,
+} from "./ticket-snapshot.schemas.js";
+
+export type ApplyTicketSnapshotsResult = {
+  updated: number;
+  markedFeita: number;
+  unmatched: number;
+};
+
+function isExternalDone(statusName: string): boolean {
+  const normalized = statusName.trim().toLowerCase();
+  return (
+    normalized === "concluído" ||
+    normalized === "concluido" ||
+    normalized === "finalizado" ||
+    normalized === "done" ||
+    normalized === "closed" ||
+    normalized === "fechado"
+  );
+}
+
+/**
+ * Update existing quests from external ticket snapshots (title + status label).
+ * Does not create quests, does not clear `falta`, does not mirror descriptions.
+ */
+export async function applyTicketSnapshots(
+  raw: unknown,
+): Promise<ApplyTicketSnapshotsResult> {
+  const payload = ticketSnapshotsInputSchema.parse(raw);
+  const profile = await getProfile();
+  if (!profile) {
+    throw new ProfileRequiredError();
+  }
+
+  const quests = await Quest.find({ where: { profileId: profile.id } });
+  const byTicket = new Map<string, Quest[]>();
+  for (const quest of quests) {
+    for (const ticketId of quest.ticketIds) {
+      const key = normalizeTicketId(ticketId);
+      const list = byTicket.get(key) ?? [];
+      list.push(quest);
+      byTicket.set(key, list);
+    }
+  }
+
+  const result: ApplyTicketSnapshotsResult = {
+    updated: 0,
+    markedFeita: 0,
+    unmatched: 0,
+  };
+  const updatedQuestIds = new Set<string>();
+  const now = new Date();
+
+  for (const issue of payload.issues) {
+    const key = normalizeTicketId(issue.key);
+    const matches = byTicket.get(key);
+    if (!matches || matches.length === 0) {
+      result.unmatched += 1;
+      continue;
+    }
+
+    for (const quest of matches) {
+      const becameFeita = applySnapshotToQuest(quest, issue, now);
+      await quest.save();
+
+      if (!updatedQuestIds.has(quest.id)) {
+        updatedQuestIds.add(quest.id);
+        result.updated += 1;
+      }
+      if (becameFeita) {
+        result.markedFeita += 1;
+      }
+    }
+  }
+
+  return result;
+}
+
+/** Ticket keys currently linked to quests (for refresh fetch). */
+export async function listLinkedTicketKeys(): Promise<string[]> {
+  const profile = await getProfile();
+  if (!profile) {
+    return [];
+  }
+
+  const quests = await Quest.find({ where: { profileId: profile.id } });
+  const keys = new Set<string>();
+  for (const quest of quests) {
+    for (const ticketId of quest.ticketIds) {
+      keys.add(normalizeTicketId(ticketId));
+    }
+  }
+  return [...keys].sort();
+}
+
+function applySnapshotToQuest(
+  quest: Quest,
+  issue: TicketSnapshot,
+  now: Date,
+): boolean {
+  const key = normalizeTicketId(issue.key);
+  const previousStatus = quest.status;
+
+  quest.titulo = `[${key}] ${issue.summary}`;
+  quest.ticketStatus = issue.status;
+  quest.ticketSyncedAt = now;
+  quest.atualizadoEm = now;
+
+  if (isExternalDone(issue.status) && previousStatus !== "feita") {
+    quest.status = "feita";
+    return true;
+  }
+
+  return false;
+}

@@ -73,4 +73,16 @@ export {
   type JiraIssueImport,
 } from "./use-cases/jira-import.schemas.js";
 
+export {
+  applyTicketSnapshots,
+  listLinkedTicketKeys,
+  type ApplyTicketSnapshotsResult,
+} from "./use-cases/ticket-snapshot.js";
+export {
+  ticketSnapshotSchema,
+  ticketSnapshotsInputSchema,
+  type TicketSnapshot,
+  type TicketSnapshotsInput,
+} from "./use-cases/ticket-snapshot.schemas.js";
+
 export const QUESTLOG_CORE_VERSION = "0.0.0";
