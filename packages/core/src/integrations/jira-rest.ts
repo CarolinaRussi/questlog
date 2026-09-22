@@ -19,6 +19,8 @@ type JiraSearchIssue = {
 
 type JiraSearchResponse = {
   issues?: JiraSearchIssue[];
+  nextPageToken?: string;
+  isLast?: boolean;
   errorMessages?: string[];
   message?: string;
 };
@@ -47,47 +49,55 @@ export async function fetchJiraTicketSnapshots(
   for (let offset = 0; offset < uniqueKeys.length; offset += CHUNK_SIZE) {
     const chunk = uniqueKeys.slice(offset, offset + CHUNK_SIZE);
     const jql = `key in (${chunk.join(",")})`;
-    const response = await fetch(`${baseUrl}/rest/api/3/search`, {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: `Basic ${auth}`,
-      },
-      body: JSON.stringify({
-        jql,
-        fields: ["summary", "status", "parent"],
-        maxResults: CHUNK_SIZE,
-      }),
-    });
+    let nextPageToken: string | undefined;
 
-    const payload = (await response.json().catch(() => null)) as
-      | JiraSearchResponse
-      | null;
-
-    if (!response.ok) {
-      const detail =
-        payload?.errorMessages?.join("; ") ||
-        payload?.message ||
-        `HTTP ${response.status}`;
-      throw new Error(`Jira search failed: ${detail}`);
-    }
-
-    for (const issue of payload?.issues ?? []) {
-      const key = issue.key?.trim();
-      const summary = issue.fields?.summary?.trim();
-      const status = issue.fields?.status?.name?.trim();
-      if (!key || !summary || !status) {
-        continue;
-      }
-      const parentKey = issue.fields?.parent?.key?.trim();
-      snapshots.push({
-        key,
-        summary,
-        status,
-        epicId: parentKey || null,
+    do {
+      const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Basic ${auth}`,
+        },
+        body: JSON.stringify({
+          jql,
+          fields: ["summary", "status", "parent"],
+          maxResults: CHUNK_SIZE,
+          ...(nextPageToken ? { nextPageToken } : {}),
+        }),
       });
-    }
+
+      const payload = (await response.json().catch(() => null)) as
+        | JiraSearchResponse
+        | null;
+
+      if (!response.ok) {
+        const detail =
+          payload?.errorMessages?.join("; ") ||
+          payload?.message ||
+          `HTTP ${response.status}`;
+        throw new Error(`Jira search failed: ${detail}`);
+      }
+
+      for (const issue of payload?.issues ?? []) {
+        const key = issue.key?.trim();
+        const summary = issue.fields?.summary?.trim();
+        const status = issue.fields?.status?.name?.trim();
+        if (!key || !summary || !status) {
+          continue;
+        }
+        const parentKey = issue.fields?.parent?.key?.trim();
+        snapshots.push({
+          key,
+          summary,
+          status,
+          epicId: parentKey || null,
+        });
+      }
+
+      nextPageToken =
+        payload?.isLast === false ? payload.nextPageToken : undefined;
+    } while (nextPageToken);
   }
 
   return snapshots;
