@@ -2,11 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ProfileSettings } from "./features/profile/ProfileSettings";
 import { ProfileWizard } from "./features/profile/ProfileWizard";
+import { ArchiveBoard } from "./features/quests/ArchiveBoard";
 import { QuestBoard } from "./features/quests/QuestBoard";
 import { fetchHealth, fetchProfile } from "./shared/lib/api";
 import { useBoardLiveSync } from "./shared/lib/use-board-live-sync";
 
-type Screen = "board" | "settings";
+type Screen = "board" | "archive" | "settings";
 
 export function App() {
   const [screen, setScreen] = useState<Screen>("board");
@@ -26,7 +27,10 @@ export function App() {
   const loading =
     healthQuery.isLoading || (healthQuery.isSuccess && profileQuery.isLoading);
   const onBoard =
-    !apiDown && !loading && Boolean(profileQuery.data) && screen === "board";
+    !apiDown &&
+    !loading &&
+    Boolean(profileQuery.data) &&
+    (screen === "board" || screen === "archive");
 
   useBoardLiveSync(onBoard);
 
@@ -75,10 +79,15 @@ export function App() {
         />
       ) : null}
 
+      {!apiDown && !loading && profileQuery.data && screen === "archive" ? (
+        <ArchiveBoard onBack={() => setScreen("board")} />
+      ) : null}
+
       {!apiDown && !loading && profileQuery.data && screen === "board" ? (
         <QuestBoard
           profile={profileQuery.data}
           onOpenSettings={() => setScreen("settings")}
+          onOpenArchive={() => setScreen("archive")}
         />
       ) : null}
     </main>

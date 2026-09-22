@@ -32,7 +32,10 @@ export function useBoardLiveSync(enabled: boolean): void {
     if (previous === null || previous === next) return;
 
     void queryClient.invalidateQueries({ queryKey: ["profile"] });
+    void queryClient.invalidateQueries({ queryKey: ["board-home"] });
+    void queryClient.invalidateQueries({ queryKey: ["board-archive"] });
     void queryClient.invalidateQueries({ queryKey: ["quests"] });
     void queryClient.invalidateQueries({ queryKey: ["commits"] });
+    void queryClient.invalidateQueries({ queryKey: ["epic-notes"] });
   }, [queryClient, revisionQuery.data?.revision]);
 }
