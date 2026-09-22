@@ -72,6 +72,26 @@ try {
   const promoted = await promoteQuest(stub.id, { mode: "watch" });
   assert.equal(promoted.watching, true);
 
+  const done = Quest.create({
+    profileId: profile.id,
+    titulo: "Done",
+    status: "feita",
+    ticketIds: ["DEMO-8"],
+    epicId: "DEMO-200",
+    epicScope: "partial",
+    repos: [],
+    falta: "",
+    faltaSource: null,
+    watching: false,
+    atualizadoEm: new Date(),
+  });
+  await done.save();
+  const reopened = await promoteQuest(done.id, { mode: "watch" });
+  assert.equal(reopened.status, "pausada");
+  assert.equal(reopened.watching, true);
+  const accompaniedAfter = await listAccompaniedQuests();
+  assert.ok(accompaniedAfter.some((quest) => quest.id === reopened.id));
+
   await dataSource.destroy();
   console.log("check:accompanied ok");
 } finally {

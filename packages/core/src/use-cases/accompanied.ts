@@ -214,6 +214,10 @@ export async function promoteQuest(
     return setActiveQuest(questId);
   }
 
+  // watch: reopen done quests so they can appear on home again
+  if (quest.status === "feita") {
+    quest.status = "pausada";
+  }
   quest.watching = true;
   quest.atualizadoEm = new Date();
   await quest.save();
