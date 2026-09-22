@@ -42,20 +42,18 @@ export function isAccompaniedQuest(
 
 /**
  * Pick the falta line to show on an epic home card.
- * Priority: active ingest quest → paused with user falta (newest) → first accompanied.
+ * Priority: active ingest quest → paused with user falta (newest) → first open.
  */
 export function pickNextFaltaForEpic(
   quests: Quest[],
   activeQuestId: string | null,
 ): { questId: string; falta: string; titulo: string } | null {
-  const accompanied = quests.filter((quest) =>
-    isAccompaniedQuest(quest, { activeQuestId }),
-  );
-  if (accompanied.length === 0) {
+  const open = quests.filter((quest) => quest.status !== "feita");
+  if (open.length === 0) {
     return null;
   }
 
-  const active = accompanied.find((quest) => quest.id === activeQuestId);
+  const active = open.find((quest) => quest.id === activeQuestId);
   if (active) {
     return {
       questId: active.id,
@@ -64,7 +62,7 @@ export function pickNextFaltaForEpic(
     };
   }
 
-  const pausedWithFalta = accompanied
+  const pausedWithFalta = open
     .filter(
       (quest) =>
         quest.status === "pausada" &&
@@ -76,7 +74,7 @@ export function pickNextFaltaForEpic(
         right.atualizadoEm.getTime() - left.atualizadoEm.getTime(),
     );
 
-  const picked = pausedWithFalta[0] ?? accompanied[0];
+  const picked = pausedWithFalta[0] ?? open[0];
   if (!picked) {
     return null;
   }
@@ -90,19 +88,29 @@ export function pickNextFaltaForEpic(
   };
 }
 
-export async function listAccompaniedQuests(): Promise<Quest[]> {
+/** All open quests (ativa + pausada) — the home board. */
+export async function listOpenQuests(): Promise<Quest[]> {
   const profile = await getProfile();
   if (!profile) {
     return [];
   }
 
-  const openQuests = await Quest.find({
+  return Quest.find({
     where: [
       { profileId: profile.id, status: "ativa" },
       { profileId: profile.id, status: "pausada" },
     ],
     order: { atualizadoEm: "DESC" },
   });
+}
+
+export async function listAccompaniedQuests(): Promise<Quest[]> {
+  const profile = await getProfile();
+  if (!profile) {
+    return [];
+  }
+
+  const openQuests = await listOpenQuests();
 
   const questIds = openQuests.map((quest) => quest.id);
   const commitQuestIds = new Set<string>();
@@ -129,30 +137,6 @@ export async function listAccompaniedQuests(): Promise<Quest[]> {
   );
 }
 
-/**
- * Open quests not yet on the home focus (pausada/pendente do import, etc.).
- * Home shows these as compact lines so nothing open is forgotten.
- */
-export async function listPendingQuests(): Promise<Quest[]> {
-  const profile = await getProfile();
-  if (!profile) {
-    return [];
-  }
-
-  const accompanied = await listAccompaniedQuests();
-  const accompaniedIds = new Set(accompanied.map((quest) => quest.id));
-
-  const openQuests = await Quest.find({
-    where: [
-      { profileId: profile.id, status: "ativa" },
-      { profileId: profile.id, status: "pausada" },
-    ],
-    order: { atualizadoEm: "DESC" },
-  });
-
-  return openQuests.filter((quest) => !accompaniedIds.has(quest.id));
-}
-
 export async function listArchiveQuests(options?: {
   query?: string;
   limit?: number;
@@ -162,15 +146,13 @@ export async function listArchiveQuests(options?: {
     return [];
   }
 
-  const accompanied = await listAccompaniedQuests();
-  const accompaniedIds = new Set(accompanied.map((quest) => quest.id));
-
+  // Archive = done work (open quests live on home).
   const all = await Quest.find({
-    where: { profileId: profile.id },
+    where: { profileId: profile.id, status: "feita" },
     order: { atualizadoEm: "DESC" },
   });
 
-  let archive = all.filter((quest) => !accompaniedIds.has(quest.id));
+  let archive = all;
 
   const query = options?.query?.trim().toLowerCase();
   if (query) {
@@ -189,7 +171,6 @@ export async function listArchiveQuests(options?: {
     return archive.slice(0, limit);
   }
 
-  // Browse mode: return the full archive so every epic can appear in the index.
   if (options?.limit != null) {
     return archive.slice(0, options.limit);
   }

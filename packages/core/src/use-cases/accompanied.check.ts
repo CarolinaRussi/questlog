@@ -13,7 +13,6 @@ import {
   pickNextFaltaForEpic,
   promoteEpic,
   promoteQuest,
-  listPendingQuests,
 } from "./accompanied.js";
 
 const tempDir = mkdtempSync(join(tmpdir(), "questlog-accompanied-"));
@@ -112,23 +111,6 @@ try {
   const epicPromote = await promoteEpic("DEMO-200", { mode: "watch" });
   assert.equal(epicPromote.promoted, 2);
   assert.ok(epicPromote.quests.every((quest) => quest.watching));
-
-  const pendingQuest = Quest.create({
-    profileId: profile.id,
-    titulo: "Pending",
-    status: "pausada",
-    ticketIds: ["DEMO-3"],
-    epicId: null,
-    epicScope: "partial",
-    repos: [],
-    falta: "Status no Jira: To Do",
-    faltaSource: "import",
-    watching: false,
-    atualizadoEm: new Date(),
-  });
-  await pendingQuest.save();
-  const pending = await listPendingQuests();
-  assert.ok(pending.some((quest) => quest.id === pendingQuest.id));
 
   await dataSource.destroy();
   console.log("check:accompanied ok");

@@ -1,9 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import {
-  listAccompaniedQuests,
+  listOpenQuests,
   listArchiveQuests,
-  listPendingQuests,
   pickNextFaltaForEpic,
   promoteEpic,
   promoteQuest,
@@ -27,7 +26,7 @@ export async function registerAccompaniedRoutes(
 ): Promise<void> {
   app.get("/api/board/home", async () => {
     const profile = await getProfile();
-    const quests = await listAccompaniedQuests();
+    const quests = await listOpenQuests();
     const byEpic = new Map<string, typeof quests>();
 
     for (const quest of quests) {
@@ -63,12 +62,10 @@ export async function registerAccompaniedRoutes(
       );
 
     const ungrouped = byEpic.get("") ?? [];
-    const pending = await listPendingQuests();
 
     return {
       epics,
       ungrouped,
-      pending,
     };
   });
 

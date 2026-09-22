@@ -146,7 +146,7 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
             Arquivo
           </h2>
           <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-            Por projeto (HESEC, TIC…). Clique no épico pra memória e acompanhar.
+            Índice do que já foi feito — busca e reabre se precisar.
           </p>
         </div>
       </header>
