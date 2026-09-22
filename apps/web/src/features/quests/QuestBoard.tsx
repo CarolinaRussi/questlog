@@ -224,7 +224,7 @@ export function QuestBoard({
   const isEmpty =
     home.epics.length === 0 &&
     home.ungrouped.length === 0 &&
-    home.suggestions.length === 0;
+    home.pending.length === 0;
 
   return (
     <div className="space-y-6">
@@ -237,7 +237,7 @@ export function QuestBoard({
             Agora
           </h2>
           <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-            Só o que você está acompanhando.
+            Em andamento + o que ainda está aberto.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -329,7 +329,7 @@ export function QuestBoard({
       {home.epics.length > 0 ? (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide">
-            Épicos em acompanhamento
+            Em andamento
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {home.epics.map((card) => {
@@ -423,38 +423,64 @@ export function QuestBoard({
         </section>
       ) : null}
 
-      {home.suggestions.length > 0 ? (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide">
-            Sugestões
-          </h3>
-          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-            No arquivo, mas ainda não acompanhadas. Traga para o agora.
-          </p>
-          <div className="space-y-2">
-            {home.suggestions.map((quest) => (
-              <SuggestionRow
-                key={quest.id}
-                quest={quest}
-                busy={promoteMutation.isPending}
-                onWatch={() =>
-                  promoteMutation.mutate({
-                    questId: quest.id,
-                    mode: "watch",
-                  })
-                }
-                onResume={() =>
-                  promoteMutation.mutate({
-                    questId: quest.id,
-                    mode: "resume",
-                  })
-                }
-                onPause={() =>
-                  setSurface({ kind: "promote-pause", quest })
-                }
-              />
-            ))}
+      {home.pending.length > 0 ? (
+        <section className="space-y-2">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide">
+              Pendências
+            </h3>
+            <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+              Abertas no Jira, ainda sem acompanhamento — pra não esquecer.
+            </p>
           </div>
+          <ul className="divide-y rounded-xl border" style={{ borderColor: "var(--ql-border)" }}>
+            {home.pending.map((quest) => (
+              <li
+                key={quest.id}
+                className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                style={{ background: "#fff" }}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{quest.titulo}</p>
+                  <p className="text-xs" style={{ color: "var(--ql-muted)" }}>
+                    {quest.status === "ativa" ? "Ativa" : "Pausada"}
+                    {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
+                    {quest.epicId ? ` · ${quest.epicId}` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    className="rounded-lg border px-2 py-1 text-xs font-semibold disabled:opacity-60"
+                    style={{ borderColor: "var(--ql-border)" }}
+                    disabled={promoteMutation.isPending}
+                    onClick={() =>
+                      promoteMutation.mutate({
+                        questId: quest.id,
+                        mode: "watch",
+                      })
+                    }
+                  >
+                    Acompanhar
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg px-2 py-1 text-xs font-semibold text-white disabled:opacity-60"
+                    style={{ background: "var(--ql-accent)" }}
+                    disabled={promoteMutation.isPending}
+                    onClick={() =>
+                      promoteMutation.mutate({
+                        questId: quest.id,
+                        mode: "resume",
+                      })
+                    }
+                  >
+                    Retomar
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
       ) : null}
 
@@ -726,64 +752,6 @@ function QuestRow({
   );
 }
 
-function SuggestionRow({
-  quest,
-  busy,
-  onWatch,
-  onResume,
-  onPause,
-}: {
-  quest: Quest;
-  busy: boolean;
-  onWatch: () => void;
-  onResume: () => void;
-  onPause: () => void;
-}) {
-  return (
-    <div
-      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-3"
-      style={{ borderColor: "var(--ql-border)", background: "#fff" }}
-    >
-      <div className="min-w-0">
-        <p className="font-medium">{quest.titulo}</p>
-        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-          {quest.ticketIds.join(", ") || "sem ticket"}
-          {quest.epicId ? ` · ${quest.epicId}` : ""}
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-60"
-          style={{ borderColor: "var(--ql-border)" }}
-          disabled={busy}
-          onClick={onWatch}
-        >
-          Acompanhar
-        </button>
-        <button
-          type="button"
-          className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-60"
-          style={{ borderColor: "var(--ql-border)" }}
-          disabled={busy}
-          onClick={onResume}
-        >
-          Retomar
-        </button>
-        <button
-          type="button"
-          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-          style={{ background: "var(--ql-accent)" }}
-          disabled={busy}
-          onClick={onPause}
-        >
-          Pausar + falta
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function QuestActionsBlock({
   quest,
   busy,
@@ -905,7 +873,7 @@ function findQuest(
     | {
         epics: { quests: Quest[] }[];
         ungrouped: Quest[];
-        suggestions: Quest[];
+        pending: Quest[];
       }
     | undefined,
   questId: string,
@@ -917,7 +885,7 @@ function findQuest(
   }
   return (
     home.ungrouped.find((quest) => quest.id === questId) ??
-    home.suggestions.find((quest) => quest.id === questId) ??
+    home.pending.find((quest) => quest.id === questId) ??
     null
   );
 }

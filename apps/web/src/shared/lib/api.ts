@@ -309,7 +309,7 @@ export type HomeEpicCard = {
 export type BoardHome = {
   epics: HomeEpicCard[];
   ungrouped: Quest[];
-  suggestions: Quest[];
+  pending: Quest[];
 };
 
 export async function fetchBoardHome(): Promise<BoardHome> {

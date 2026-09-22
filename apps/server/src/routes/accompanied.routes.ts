@@ -3,7 +3,7 @@ import { z } from "zod";
 import {
   listAccompaniedQuests,
   listArchiveQuests,
-  listArchiveSuggestions,
+  listPendingQuests,
   pickNextFaltaForEpic,
   promoteEpic,
   promoteQuest,
@@ -63,11 +63,12 @@ export async function registerAccompaniedRoutes(
       );
 
     const ungrouped = byEpic.get("") ?? [];
+    const pending = await listPendingQuests();
 
     return {
       epics,
       ungrouped,
-      suggestions: await listArchiveSuggestions(3),
+      pending,
     };
   });
 

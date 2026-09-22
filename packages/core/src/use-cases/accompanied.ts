@@ -129,6 +129,30 @@ export async function listAccompaniedQuests(): Promise<Quest[]> {
   );
 }
 
+/**
+ * Open quests not yet on the home focus (pausada/pendente do import, etc.).
+ * Home shows these as compact lines so nothing open is forgotten.
+ */
+export async function listPendingQuests(): Promise<Quest[]> {
+  const profile = await getProfile();
+  if (!profile) {
+    return [];
+  }
+
+  const accompanied = await listAccompaniedQuests();
+  const accompaniedIds = new Set(accompanied.map((quest) => quest.id));
+
+  const openQuests = await Quest.find({
+    where: [
+      { profileId: profile.id, status: "ativa" },
+      { profileId: profile.id, status: "pausada" },
+    ],
+    order: { atualizadoEm: "DESC" },
+  });
+
+  return openQuests.filter((quest) => !accompaniedIds.has(quest.id));
+}
+
 export async function listArchiveQuests(options?: {
   query?: string;
   limit?: number;

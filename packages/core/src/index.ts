@@ -50,6 +50,7 @@ export {
   listAccompaniedQuests,
   listArchiveQuests,
   listArchiveSuggestions,
+  listPendingQuests,
   promoteQuest,
   promoteEpic,
   promoteQuestInputSchema,

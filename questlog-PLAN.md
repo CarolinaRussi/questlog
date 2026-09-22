@@ -293,18 +293,20 @@ Job: acompanhar o que está em andamento (`falta`) e lembrar o que foi feito (cu
 
 Decisões travadas:
 1. Home = foco no **agora**
-2. Home = só **em acompanhamento** (não as ~470 do import)
-3. Cards = **épico** + **próxima falta** visível
+2. Home = **em andamento** (acompanhadas) **+ pendências** abertas (pausada/pendente) em lista compacta — não some o que ainda falta fazer
+3. Cards = **épico** + **próxima falta** visível (só no bloco em andamento)
 4. Detalhe: **falta → tarefas → ações → resumo Gemini**
 5. Chrome: **Nova quest** discreta; refresh/inbox/arquivo/settings fora do 1º viewport
-6. Promove: implícito (ativa / falta user / commit) **+** CTA no Arquivo
+6. Promove: implícito (ativa / falta user / commit) **+** CTA no Arquivo / nas pendências
 7. Falta no card: ativa do ingest → pausada com falta real → fallback
 8. Currículo: detalhe + **Copiar resumo** (página Memória depois)
-9. Empty: **guiado** com sugestões + Retomar
+9. Empty: **guiado** com pendências + Retomar
 10. Arquivo: **épicos + sugestões + busca**
 11. Schema: **`falta_source`** (`user` \| `import`) + **`watching`**
 
-“Em acompanhamento” = `status=ativa` **ou** `watching=true` **ou** (`pausada` ∧ `falta_source=user`) **ou** tem commit ligado.
+“Em andamento / acompanhamento” = `status=ativa` **ou** `watching=true` **ou** (`pausada` ∧ `falta_source=user`) **ou** tem commit ligado.
+
+“Pendência” (home, linha compacta) = quest aberta (`ativa`\|`pausada`) que **ainda não** está em acompanhamento.
 
 | Fatia | Escopo | Commit sugerido |
 |-------|--------|-----------------|
