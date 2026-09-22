@@ -19,7 +19,8 @@
     "check:commit": "tsx src/use-cases/commit.check.ts",
     "check:ticket-match": "tsx src/use-cases/ticket-match.check.ts",
     "check:seed": "tsx src/use-cases/seed.check.ts",
-    "check:ticket-snapshot": "tsx src/use-cases/ticket-snapshot.check.ts"
+    "check:ticket-snapshot": "tsx src/use-cases/ticket-snapshot.check.ts",
+    "check:secrets": "tsx src/use-cases/secrets.check.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",

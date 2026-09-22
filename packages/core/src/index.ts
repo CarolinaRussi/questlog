@@ -98,4 +98,13 @@ export {
   saveEpicNoteFields,
 } from "./use-cases/epic-note.js";
 
+export {
+  getLocalSecrets,
+  getLocalSecretsPublic,
+  upsertLocalSecrets,
+  getSecretsPath,
+  type LocalSecrets,
+  type LocalSecretsPublic,
+} from "./use-cases/secrets.js";
+
 export const QUESTLOG_CORE_VERSION = "0.0.0";
