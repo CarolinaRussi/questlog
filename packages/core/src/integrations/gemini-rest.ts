@@ -12,7 +12,6 @@ type GeminiResponse = {
 
 const MODEL_CANDIDATES = [
   "gemini-3.6-flash",
-  "gemini-2.5-flash",
   "gemini-flash-latest",
 ] as const;
 
@@ -27,6 +26,21 @@ function isRetryableGeminiError(
     normalized.includes("try again later") ||
     normalized.includes("resource_exhausted") ||
     normalized.includes("unavailable")
+  );
+}
+
+/** Model gone / not allowed for this key — try the next candidate. */
+function isModelUnavailableError(
+  status: number,
+  message: string | undefined,
+): boolean {
+  if (status === 404) return true;
+  const normalized = (message ?? "").toLowerCase();
+  return (
+    normalized.includes("no longer available") ||
+    normalized.includes("not found") ||
+    normalized.includes("is not found") ||
+    normalized.includes("not supported")
   );
 }
 
@@ -128,9 +142,15 @@ export async function generateEpicNotesWithGemini(input: {
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         lastError = err;
+        const status =
+          "status" in err ? Number((err as { status?: number }).status) : 0;
         const retryable =
           "retryable" in err && Boolean((err as { retryable?: boolean }).retryable);
+        const modelGone = isModelUnavailableError(status, err.message);
 
+        if (modelGone) {
+          break;
+        }
         if (retryable && attempt === 0) {
           await sleep(1500);
           continue;
