@@ -1,6 +1,7 @@
 import { QUESTLOG_CORE_VERSION } from "@questlog/core";
 import { runImportJiraCommand } from "./commands/import-jira.js";
 import { runIngestCommitCommand } from "./commands/ingest-commit.js";
+import { runRefreshJiraCommand } from "./commands/refresh-jira.js";
 import { runRemindCommand } from "./commands/remind.js";
 import { runSeedCommand } from "./commands/seed.js";
 
@@ -17,16 +18,19 @@ async function main(): Promise<void> {
 Commands:
   seed <gran|minimal>     Upsert profile from examples/*.profile.json
   import-jira <file.json> Import issues export into quests
+  refresh-jira [--file f] Refresh title/status for linked tickets (Jira env or file)
   ingest-commit           Read latest git commit in cwd and store via core (fail-open)
   remind                  Session reminder (quests + API health)
   help                    Show this help
 
 Flags:
   ingest-commit --strict   Exit non-zero on failure (default is fail-open)
+  refresh-jira --file path Use a JSON snapshot instead of Jira REST
 
 Notes:
   Failed ingest payloads are queued under the QuestLog data dir and
-  replayed on the next successful ingest-commit run.`);
+  replayed on the next successful ingest-commit run.
+  Jira REST uses JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN (local env only).`);
     return;
   }
 
@@ -45,6 +49,17 @@ Notes:
       throw new Error("Usage: questlog import-jira <file.json>");
     }
     await runImportJiraCommand(filePath);
+    return;
+  }
+
+  if (command === "refresh-jira") {
+    const fileFlagIndex = args.indexOf("--file");
+    const filePath =
+      fileFlagIndex >= 0 ? args[fileFlagIndex + 1] : undefined;
+    if (fileFlagIndex >= 0 && !filePath) {
+      throw new Error("Usage: questlog refresh-jira --file <file.json>");
+    }
+    await runRefreshJiraCommand({ filePath });
     return;
   }
 

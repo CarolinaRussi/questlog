@@ -46,11 +46,18 @@ Override: `QUESTLOG_DATA_DIR`.
 pnpm --filter @questlog/cli remind
 pnpm --filter @questlog/cli ingest-commit
 pnpm --filter @questlog/cli ingest-commit -- --strict
+pnpm --filter @questlog/cli refresh-jira
+pnpm --filter @questlog/cli refresh-jira -- --file path/to/issues.json
 ```
 
 `ingest-commit` é **fail-open** por padrão (não quebra o `git commit`).
 Se o ingest falhar depois de ler o commit, o payload vai para uma fila local
 (`ingest-queue.json` no data dir) e é reprocessado no próximo `ingest-commit`.
+
+`refresh-jira` atualiza **só título + status** das tickets já ligadas a quests
+(nunca a descrição do card). Credenciais locais: `JIRA_BASE_URL`, `JIRA_EMAIL`,
+`JIRA_API_TOKEN` (ver `.env.example`). Alternativa offline: `--file` com
+`{ "issues": [{ "key", "summary", "status" }] }`.
 
 ## Hooks do Cursor
 
