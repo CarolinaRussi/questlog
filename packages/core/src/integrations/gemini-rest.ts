@@ -22,13 +22,14 @@ export async function generateEpicNotesWithGemini(input: {
   model?: string;
 }): Promise<GeminiGenerateResult> {
   const model = input.model ?? DEFAULT_MODEL;
-  const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent` +
-    `?key=${encodeURIComponent(input.apiKey)}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": input.apiKey,
+    },
     body: JSON.stringify({
       contents: [{ role: "user", parts: [{ text: input.prompt }] }],
       generationConfig: {
