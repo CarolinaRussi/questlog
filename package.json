@@ -12,6 +12,7 @@
     "build": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web build",
     "typecheck": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web typecheck",
     "seed": "pnpm --filter @questlog/core build && pnpm --filter @questlog/cli seed",
+    "import-jira": "pnpm --filter @questlog/core build && pnpm --filter @questlog/cli import-jira",
     "remind": "pnpm --filter @questlog/cli remind"
   },
   "devDependencies": {

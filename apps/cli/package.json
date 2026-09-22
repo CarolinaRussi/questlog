@@ -12,6 +12,7 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx src/index.ts seed",
+    "import-jira": "tsx src/index.ts import-jira",
     "ingest-commit": "tsx src/index.ts ingest-commit",
     "remind": "tsx src/index.ts remind"
   },

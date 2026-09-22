@@ -54,5 +54,12 @@ export { extractTicketIds, questHasAnyTicket } from "./use-cases/ticket-match.js
 export { listCommits } from "./use-cases/list-commits.js";
 
 export { seedProfile } from "./use-cases/seed.js";
+export { importJiraIssues } from "./use-cases/jira-import.js";
+export type { ImportJiraResult } from "./use-cases/jira-import.js";
+export {
+  jiraIssueImportSchema,
+  jiraImportFileSchema,
+  type JiraIssueImport,
+} from "./use-cases/jira-import.schemas.js";
 
 export const QUESTLOG_CORE_VERSION = "0.0.0";

@@ -1,4 +1,5 @@
 import { QUESTLOG_CORE_VERSION } from "@questlog/core";
+import { runImportJiraCommand } from "./commands/import-jira.js";
 import { runIngestCommitCommand } from "./commands/ingest-commit.js";
 import { runRemindCommand } from "./commands/remind.js";
 import { runSeedCommand } from "./commands/seed.js";
@@ -14,10 +15,11 @@ async function main(): Promise<void> {
   if (command === "help" || command === "--help" || command === "-h") {
     console.log(`questlog (core ${QUESTLOG_CORE_VERSION})
 Commands:
-  seed <gran|minimal>   Upsert profile from examples/*.profile.json
-  ingest-commit         Read latest git commit in cwd and store via core (fail-open)
-  remind                Session reminder (quests + API health)
-  help                  Show this help
+  seed <gran|minimal>     Upsert profile from examples/*.profile.json
+  import-jira <file.json> Import issues export into quests
+  ingest-commit           Read latest git commit in cwd and store via core (fail-open)
+  remind                  Session reminder (quests + API health)
+  help                    Show this help
 
 Flags:
   ingest-commit --strict   Exit non-zero on failure (default is fail-open)`);
@@ -30,6 +32,15 @@ Flags:
       throw new Error("Usage: questlog seed <gran|minimal>");
     }
     await runSeedCommand(exampleName);
+    return;
+  }
+
+  if (command === "import-jira") {
+    const filePath = args[1];
+    if (!filePath) {
+      throw new Error("Usage: questlog import-jira <file.json>");
+    }
+    await runImportJiraCommand(filePath);
     return;
   }
 
