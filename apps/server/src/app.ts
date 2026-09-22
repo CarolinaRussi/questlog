@@ -1,0 +1,24 @@
+import cors from "@fastify/cors";
+import Fastify from "fastify";
+import { registerErrorHandler } from "./lib/errors.js";
+import { registerCommitRoutes } from "./routes/commits.routes.js";
+import { registerHealthRoutes } from "./routes/health.routes.js";
+import { registerProfileRoutes } from "./routes/profile.routes.js";
+import { registerQuestRoutes } from "./routes/quests.routes.js";
+
+export async function buildApp() {
+  const app = Fastify({ logger: true });
+
+  await app.register(cors, {
+    origin: true,
+  });
+
+  registerErrorHandler(app);
+
+  await registerHealthRoutes(app);
+  await registerProfileRoutes(app);
+  await registerQuestRoutes(app);
+  await registerCommitRoutes(app);
+
+  return app;
+}

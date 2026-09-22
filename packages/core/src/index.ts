@@ -51,6 +51,7 @@ export {
   type IngestCommitInput,
 } from "./use-cases/commit.schemas.js";
 export { extractTicketIds, questHasAnyTicket } from "./use-cases/ticket-match.js";
+export { listCommits } from "./use-cases/list-commits.js";
 
 export { seedProfile } from "./use-cases/seed.js";
 
