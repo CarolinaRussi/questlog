@@ -12,9 +12,18 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "dev": "tsc -p tsconfig.json --watch"
+    "dev": "tsc -p tsconfig.json --watch",
+    "check:db": "tsx src/db/init-db.check.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.26"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.3.0",
+    "tsx": "^4.20.4",
     "typescript": "^5.9.2"
   }
 }
