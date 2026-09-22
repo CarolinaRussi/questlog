@@ -131,13 +131,23 @@ async function waitForHealth(timeoutMs = 30_000) {
   );
 }
 
+function resolveAppIcon() {
+  const candidates = [
+    join(desktopDir, "../branding/icon.png"),
+    join(process.resourcesPath ?? "", "icon.png"),
+  ];
+  return candidates.find((candidate) => candidate && existsSync(candidate));
+}
+
 function createWindow() {
+  const iconPath = resolveAppIcon();
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 840,
     minWidth: 900,
     minHeight: 600,
     title: "QuestLog",
+    ...(iconPath ? { icon: iconPath } : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

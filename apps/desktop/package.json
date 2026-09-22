@@ -20,9 +20,9 @@
     "copyright": "Copyright © QuestLog",
     "directories": {
       "output": "release",
-      "buildResources": "build"
+      "buildResources": "branding"
     },
-    "files": ["src/main.mjs", "package.json"],
+    "files": ["src/main.mjs", "package.json", "branding/icon.png"],
     "extraResources": [
       {
         "from": "pack-staging",
@@ -33,8 +33,12 @@
     "npmRebuild": false,
     "nodeGypRebuild": false,
     "win": {
-      "signAndEditExecutable": false,
+      "icon": "branding/icon.png",
+      "signExecutable": false,
       "target": ["portable", "dir"]
+    },
+    "portable": {
+      "artifactName": "QuestLog.exe"
     }
   }
 }
