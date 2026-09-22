@@ -7,6 +7,7 @@ import {
   ticketSnapshotsInputSchema,
   upsertEpicTitles,
 } from "@questlog/core";
+import { tryReadJiraCredentials } from "../lib/epic-titles.js";
 
 export class JiraCredentialsMissingError extends Error {
   constructor() {
@@ -22,15 +23,11 @@ function readJiraCredentialsFromEnv(): {
   email: string;
   apiToken: string;
 } {
-  const baseUrl = process.env.JIRA_BASE_URL?.trim();
-  const email = process.env.JIRA_EMAIL?.trim();
-  const apiToken = process.env.JIRA_API_TOKEN?.trim();
-
-  if (!baseUrl || !email || !apiToken) {
+  const credentials = tryReadJiraCredentials();
+  if (!credentials) {
     throw new JiraCredentialsMissingError();
   }
-
-  return { baseUrl, email, apiToken };
+  return credentials;
 }
 
 export async function registerTicketRoutes(

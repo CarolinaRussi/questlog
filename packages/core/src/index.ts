@@ -123,6 +123,7 @@ export {
   upsertEpicTitles,
   listLinkedEpicKeys,
   resolveEpicTitles,
+  ensureEpicTitles,
 } from "./use-cases/epic-note.js";
 
 export {

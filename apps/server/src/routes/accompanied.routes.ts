@@ -9,8 +9,8 @@ import {
   promoteQuest,
   promoteQuestInputSchema,
   getProfile,
-  resolveEpicTitles,
 } from "@questlog/core";
+import { epicTitlesForBoard } from "../lib/epic-titles.js";
 
 const archiveQuerySchema = z.object({
   q: z.string().optional(),
@@ -37,7 +37,7 @@ export async function registerAccompaniedRoutes(
     }
 
     const epicIds = [...byEpic.keys()].filter((epicId) => epicId.length > 0);
-    const titles = await resolveEpicTitles(epicIds);
+    const titles = await epicTitlesForBoard(epicIds);
 
     const epics = epicIds
       .map((epicId) => {
@@ -78,7 +78,7 @@ export async function registerAccompaniedRoutes(
           .filter(Boolean),
       ),
     ];
-    const epicTitles = await resolveEpicTitles(epicIds);
+    const epicTitles = await epicTitlesForBoard(epicIds);
     return { quests, epicTitles };
   });
 

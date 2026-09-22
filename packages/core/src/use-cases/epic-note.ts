@@ -111,8 +111,8 @@ export async function listLinkedEpicKeys(): Promise<string[]> {
 }
 
 /**
- * Resolve display titles for epic keys: stored title → quest that is the epic
- * issue → first line of Gemini overview.
+ * Resolve display titles for epic keys: stored Jira/title → quest that is the
+ * epic issue. Never uses Gemini overview (that is description, not title).
  */
 export async function resolveEpicTitles(
   epicIds: string[],
@@ -160,14 +160,42 @@ export async function resolveEpicTitles(
     if (fromQuest) {
       result[epicId] = fromQuest;
       await saveEpicTitle(epicId, fromQuest);
-      continue;
-    }
-    const overview = note?.overview.trim() ?? "";
-    if (overview) {
-      result[epicId] = firstLine(overview, 100);
     }
   }
   return result;
+}
+
+/**
+ * Fill missing epic titles via a fetcher (typically Jira summary by key).
+ */
+export async function ensureEpicTitles(
+  epicIds: string[],
+  fetchSummaries: (
+    keys: string[],
+  ) => Promise<Array<{ key: string; summary: string }>>,
+): Promise<Record<string, string>> {
+  const resolved = await resolveEpicTitles(epicIds);
+  const unique = [
+    ...new Set(
+      epicIds.map((epicId) => normalizeTicketId(epicId)).filter(Boolean),
+    ),
+  ];
+  const missing = unique.filter((epicId) => !resolved[epicId]);
+  if (missing.length === 0) {
+    return resolved;
+  }
+
+  const fetched = await fetchSummaries(missing);
+  if (fetched.length > 0) {
+    await upsertEpicTitles(
+      fetched.map((issue) => ({
+        epicId: issue.key,
+        title: issue.summary,
+      })),
+    );
+  }
+
+  return resolveEpicTitles(epicIds);
 }
 
 function stripTicketPrefix(titulo: string, ticketId: string): string {
@@ -180,11 +208,5 @@ function stripTicketPrefix(titulo: string, ticketId: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function firstLine(text: string, maxLen: number): string {
-  const line = text.split(/\r?\n/)[0]?.trim() ?? "";
-  if (line.length <= maxLen) return line;
-  return `${line.slice(0, maxLen - 1)}…`;
 }
 
