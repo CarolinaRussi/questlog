@@ -41,4 +41,15 @@ export {
   type PauseQuestInput,
 } from "./use-cases/quest.schemas.js";
 
+export {
+  ingestCommit,
+  resolveQuestForCommit,
+  type IngestCommitResult,
+} from "./use-cases/commit.js";
+export {
+  ingestCommitInputSchema,
+  type IngestCommitInput,
+} from "./use-cases/commit.schemas.js";
+export { extractTicketIds, questHasAnyTicket } from "./use-cases/ticket-match.js";
+
 export const QUESTLOG_CORE_VERSION = "0.0.0";
