@@ -56,11 +56,26 @@ try {
     repo: "demo",
     quando: new Date(),
     assunto: "chore: no ticket in message",
-    branch: "feature/HESEC-20-login",
+    branch: "origin/feature/hesec-20-login",
     resumo: "",
   });
   assert.equal(branchMatch.matchedBy, "branch");
   assert.equal(branchMatch.questId, byBranch.id);
+
+  const multiTicketQuest = await createQuest({
+    titulo: "Multi ticket",
+    ticketIds: ["HESEC-40", "HESEC-41"],
+  });
+  const multiBranch = await ingestCommit({
+    hash: "fff",
+    repo: "demo",
+    quando: new Date(),
+    assunto: "wip without keys",
+    branch: "feature/HESEC-40_HESEC-41-combo",
+    resumo: "",
+  });
+  assert.equal(multiBranch.matchedBy, "branch");
+  assert.equal(multiBranch.questId, multiTicketQuest.id);
 
   const activeMatch = await ingestCommit({
     hash: "ccc",

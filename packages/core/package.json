@@ -17,6 +17,7 @@
     "check:profile": "tsx src/use-cases/profile.check.ts",
     "check:quest": "tsx src/use-cases/quest.check.ts",
     "check:commit": "tsx src/use-cases/commit.check.ts",
+    "check:ticket-match": "tsx src/use-cases/ticket-match.check.ts",
     "check:seed": "tsx src/use-cases/seed.check.ts"
   },
   "dependencies": {

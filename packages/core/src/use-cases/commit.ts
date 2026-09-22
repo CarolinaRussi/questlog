@@ -8,7 +8,7 @@ import {
   ingestCommitInputSchema,
   type IngestCommitInput,
 } from "./commit.schemas.js";
-import { extractTicketIds, questHasAnyTicket } from "./ticket-match.js";
+import { extractTicketIds, extractTicketsFromBranch, pickBestQuestByTickets } from "./ticket-match.js";
 
 export type IngestCommitResult = {
   commit: Commit;
@@ -37,19 +37,17 @@ export function resolveQuestForCommit(input: {
   const { profile, openQuests, messageText, branch } = input;
   const messageTickets = extractTicketIds(messageText, profile.ticketPattern);
 
-  for (const quest of openQuests) {
-    if (questHasAnyTicket(quest.ticketIds, messageTickets)) {
-      return { questId: quest.id, matchedBy: "ticket" };
-    }
+  const byMessage = pickBestQuestByTickets(openQuests, messageTickets);
+  if (byMessage) {
+    return { questId: byMessage.id, matchedBy: "ticket" };
   }
 
   const branchPattern = profile.branchPattern ?? profile.ticketPattern;
   if (branch && branchPattern) {
-    const branchTickets = extractTicketIds(branch, branchPattern);
-    for (const quest of openQuests) {
-      if (questHasAnyTicket(quest.ticketIds, branchTickets)) {
-        return { questId: quest.id, matchedBy: "branch" };
-      }
+    const branchTickets = extractTicketsFromBranch(branch, branchPattern);
+    const byBranch = pickBestQuestByTickets(openQuests, branchTickets);
+    if (byBranch) {
+      return { questId: byBranch.id, matchedBy: "branch" };
     }
   }
 
