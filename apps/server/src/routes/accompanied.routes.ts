@@ -9,6 +9,7 @@ import {
   promoteQuest,
   promoteQuestInputSchema,
   getProfile,
+  resolveEpicTitles,
 } from "@questlog/core";
 
 const archiveQuerySchema = z.object({
@@ -35,9 +36,12 @@ export async function registerAccompaniedRoutes(
       byEpic.set(key, list);
     }
 
-    const epics = [...byEpic.entries()]
-      .filter(([epicId]) => epicId.length > 0)
-      .map(([epicId, epicQuests]) => {
+    const epicIds = [...byEpic.keys()].filter((epicId) => epicId.length > 0);
+    const titles = await resolveEpicTitles(epicIds);
+
+    const epics = epicIds
+      .map((epicId) => {
+        const epicQuests = byEpic.get(epicId) ?? [];
         const next = pickNextFaltaForEpic(
           epicQuests,
           profile?.activeQuestId ?? null,
@@ -47,6 +51,7 @@ export async function registerAccompaniedRoutes(
           quests: epicQuests,
           nextFalta: next,
           openCount: epicQuests.length,
+          title: titles[epicId] ?? "",
         };
       })
       .sort((left, right) => left.epicId.localeCompare(right.epicId));
@@ -62,10 +67,19 @@ export async function registerAccompaniedRoutes(
 
   app.get("/api/board/archive", async (request) => {
     const query = archiveQuerySchema.parse(request.query);
-    return listArchiveQuests({
+    const quests = await listArchiveQuests({
       query: query.q,
       limit: query.limit,
     });
+    const epicIds = [
+      ...new Set(
+        quests
+          .map((quest) => quest.epicId?.trim().toUpperCase() ?? "")
+          .filter(Boolean),
+      ),
+    ];
+    const epicTitles = await resolveEpicTitles(epicIds);
+    return { quests, epicTitles };
   });
 
   app.post("/api/quests/:id/promote", async (request) => {

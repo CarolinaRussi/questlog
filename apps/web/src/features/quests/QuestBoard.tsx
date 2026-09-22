@@ -174,6 +174,9 @@ export function QuestBoard({
                 : "") +
               (result.markedFeita > 0
                 ? ` · ${result.markedFeita} marcadas feitas`
+                : "") +
+              (result.epicTitlesUpdated
+                ? ` · ${result.epicTitlesUpdated} nome(s) de épico`
                 : ""),
       );
       invalidateBoard();
@@ -357,6 +360,11 @@ export function QuestBoard({
                   >
                     {card.epicId}
                   </p>
+                  {card.title ? (
+                    <p className="mt-1 text-sm font-medium leading-snug">
+                      {card.title}
+                    </p>
+                  ) : null}
                   <p
                     className="mt-1 text-sm"
                     style={{ color: "var(--ql-muted)" }}
@@ -546,6 +554,10 @@ export function QuestBoard({
         >
           <EpicDetailPanel
             epicId={surface.epicId}
+            epicTitle={
+              home.epics.find((card) => card.epicId === surface.epicId)
+                ?.title ?? null
+            }
             quests={
               home.epics.find((card) => card.epicId === surface.epicId)
                 ?.quests ?? []

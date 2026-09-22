@@ -22,6 +22,10 @@ export class EpicNote extends BaseEntity {
   @Column({ name: "epic_id", type: "text" })
   epicId!: string;
 
+  /** Jira / tracker summary for list cards (not the Gemini overview). */
+  @Column({ type: "text", default: "" })
+  title!: string;
+
   @Column({ type: "text", default: "" })
   overview!: string;
 

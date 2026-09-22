@@ -2,8 +2,10 @@ import type { FastifyInstance } from "fastify";
 import {
   applyTicketSnapshots,
   fetchJiraTicketSnapshots,
+  listLinkedEpicKeys,
   listLinkedTicketKeys,
   ticketSnapshotsInputSchema,
+  upsertEpicTitles,
 } from "@questlog/core";
 
 export class JiraCredentialsMissingError extends Error {
@@ -54,6 +56,7 @@ export async function registerTicketRoutes(
           markedFeita: 0,
           unmatched: 0,
           fetched: 0,
+          epicTitlesUpdated: 0,
         };
       }
       const credentials = readJiraCredentialsFromEnv();
@@ -66,10 +69,30 @@ export async function registerTicketRoutes(
         markedFeita: 0,
         unmatched: 0,
         fetched: 0,
+        epicTitlesUpdated: 0,
       };
     }
 
     const result = await applyTicketSnapshots({ issues });
-    return { ...result, fetched: issues.length };
+
+    let epicTitlesUpdated = 0;
+    if (!hasBodyIssues) {
+      const credentials = readJiraCredentialsFromEnv();
+      const epicKeys = await listLinkedEpicKeys();
+      if (epicKeys.length > 0) {
+        const epicIssues = await fetchJiraTicketSnapshots(
+          credentials,
+          epicKeys,
+        );
+        epicTitlesUpdated = await upsertEpicTitles(
+          epicIssues.map((issue) => ({
+            epicId: issue.key,
+            title: issue.summary,
+          })),
+        );
+      }
+    }
+
+    return { ...result, fetched: issues.length, epicTitlesUpdated };
   });
 }

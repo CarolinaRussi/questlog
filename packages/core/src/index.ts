@@ -119,6 +119,10 @@ export {
   getEpicNote,
   getOrCreateEpicNote,
   saveEpicNoteFields,
+  saveEpicTitle,
+  upsertEpicTitles,
+  listLinkedEpicKeys,
+  resolveEpicTitles,
 } from "./use-cases/epic-note.js";
 
 export {

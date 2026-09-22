@@ -214,6 +214,7 @@ export type RefreshTicketsResult = {
   epicLinked: number;
   unmatched: number;
   fetched: number;
+  epicTitlesUpdated?: number;
 };
 
 export async function refreshTickets(): Promise<RefreshTicketsResult> {
@@ -258,6 +259,7 @@ export type EpicNote = {
   id: string;
   profileId: string;
   epicId: string;
+  title: string;
   overview: string;
   progress: string;
   updatedAt: string;
@@ -294,6 +296,7 @@ export async function summarizeEpic(
 
 export type HomeEpicCard = {
   epicId: string;
+  title: string;
   quests: Quest[];
   openCount: number;
   nextFalta: {
@@ -317,7 +320,12 @@ export async function fetchBoardHome(): Promise<BoardHome> {
   return (await response.json()) as BoardHome;
 }
 
-export async function fetchArchive(query?: string): Promise<Quest[]> {
+export type ArchiveBoardResponse = {
+  quests: Quest[];
+  epicTitles: Record<string, string>;
+};
+
+export async function fetchArchive(query?: string): Promise<ArchiveBoardResponse> {
   const params = new URLSearchParams();
   if (query?.trim()) params.set("q", query.trim());
   params.set("limit", "200");
@@ -325,7 +333,7 @@ export async function fetchArchive(query?: string): Promise<Quest[]> {
   if (!response.ok) {
     throw new Error(await readError(response));
   }
-  return (await response.json()) as Quest[];
+  return (await response.json()) as ArchiveBoardResponse;
 }
 
 export async function promoteQuest(

@@ -92,7 +92,8 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
     },
   });
 
-  const quests = archiveQuery.data ?? [];
+  const quests = archiveQuery.data?.quests ?? [];
+  const epicTitles = archiveQuery.data?.epicTitles ?? {};
   const prefixes = useMemo(() => collectPrefixes(quests), [quests]);
   const activePrefix = prefixTab && prefixes.includes(prefixTab)
     ? prefixTab
@@ -286,6 +287,11 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
                   >
                     {group.epicId}
                   </p>
+                  {epicTitles[group.epicId] ? (
+                    <p className="mt-1 text-sm font-medium leading-snug">
+                      {epicTitles[group.epicId]}
+                    </p>
+                  ) : null}
                   <p
                     className="mt-1 text-sm"
                     style={{ color: "var(--ql-muted)" }}
@@ -403,6 +409,7 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
             </div>
             <EpicDetailPanel
               epicId={selectedEpicId}
+              epicTitle={epicTitles[selectedEpicId] ?? null}
               quests={selectedEpicQuests}
               profile={profile}
               selectedQuestId={selectedQuestId}

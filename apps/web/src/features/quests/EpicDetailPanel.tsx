@@ -12,6 +12,7 @@ import {
 
 type EpicDetailPanelProps = {
   epicId: string;
+  epicTitle?: string | null;
   quests: Quest[];
   profile: Profile;
   selectedQuestId: string | null;
@@ -21,6 +22,7 @@ type EpicDetailPanelProps = {
 
 export function EpicDetailPanel({
   epicId,
+  epicTitle: epicTitleProp,
   quests,
   profile,
   selectedQuestId,
@@ -44,6 +46,8 @@ export function EpicDetailPanel({
     notesQuery.data?.find(
       (item) => item.epicId.toUpperCase() === epicId.toUpperCase(),
     ) ?? null;
+
+  const epicTitle = epicTitleProp?.trim() || note?.title?.trim() || null;
 
   const summarizeMutation = useMutation({
     mutationFn: () => summarizeEpic(epicId),
@@ -112,6 +116,9 @@ export function EpicDetailPanel({
             epicId
           )}
         </h3>
+        {epicTitle ? (
+          <p className="text-base font-medium leading-snug">{epicTitle}</p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
