@@ -264,6 +264,29 @@ Entregar **uma fatia por vez**; review + commit antes da próxima.
 
 Critério de pronto = **3.1–3.5** verdes. Sync contínuo / webhooks = fora.
 
+### Fase 5 — Épico + resumo inteligente (Gemini, chave do usuário)
+
+**Não** é clone do Jira. Board continua sendo quests; épico é contexto.
+Descrição do card **não** vira coluna do board — só é lida **na hora** do resumo (on-demand), se houver credencial Jira.
+
+Decisões travadas:
+- Chave Gemini **do usuário** nas Settings (arquivo local no data dir; nunca no Git)
+- Dois textos por épico: **overview** (o que é o épico) + **progress** (o que *eu* fui fazendo)
+- Resumo é **incremental**: nova quest/tarefa **complementa** o que já existe, não reescreve do zero
+- Uma quest feita **≠** épico inteiro (`epic_scope` default `partial`); o modelo é instruído a não reivindicar o épico
+- Sem chave Gemini: board e épicos funcionam; botão de resumo explica que falta a chave
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **5.1** | Entity `epic_notes` (overview + progress) + migration | `feat(core): add epic notes schema` |
+| **5.2** | Secrets locais (`geminiApiKey`) get/upsert no data dir + API/settings | `feat(core): local gemini api key secrets` |
+| **5.3** | Cliente Gemini + `complementEpicNotes` (incremental, partial-safe) + check | `feat(core): complement epic notes via gemini` |
+| **5.4** | No resumo: fetch on-demand de description Jira (plain text) das keys do épico | `feat(core): fetch jira descriptions for epic summary` |
+| **5.5** | Server: secrets + `POST /api/epics/:id/summarize` + list notes | `feat(server): epic summarize and secrets endpoints` |
+| **5.6** | Web: Settings (chave Gemini) + board agrupado por épico + painel overview/progress | `feat(web): epic board groups and gemini settings` |
+
+Critério de pronto = **5.1–5.6** verdes. Multi-modelo / Ollama = futuro.
+
 ### Fase 4 — App instalável
 
 - Shell desktop reusando `core` + API local
@@ -285,7 +308,8 @@ Critério de pronto = **3.1–3.5** verdes. Sync contínuo / webhooks = fora.
 ## Fora de escopo (de propósito)
 
 - Hosting cloud / Vercel como runtime do produto
-- Espelhar backlog completo de Jira
+- Espelhar backlog completo de Jira / virar clone do Jira
+- Persistir descrição/comentários do card como espelho permanente (leitura on-demand pro resumo IA ok)
 - Substituir Spec Kit / `tasks.md` de features
 - Docker obrigatório para usar o app
 - Hardcode HESEC / repos Gran no `core`
