@@ -14,4 +14,10 @@ export type {
   QuestRepo,
 } from "./domain/types.js";
 
+export { getProfile, upsertProfile } from "./use-cases/profile.js";
+export {
+  upsertProfileInputSchema,
+  type UpsertProfileInput,
+} from "./use-cases/profile.schemas.js";
+
 export const QUESTLOG_CORE_VERSION = "0.0.0";

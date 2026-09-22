@@ -13,12 +13,14 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsc -p tsconfig.json --watch",
-    "check:db": "tsx src/db/init-db.check.ts"
+    "check:db": "tsx src/db/init-db.check.ts",
+    "check:profile": "tsx src/use-cases/profile.check.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
     "reflect-metadata": "^0.2.2",
-    "typeorm": "^0.3.26"
+    "typeorm": "^0.3.26",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
