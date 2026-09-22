@@ -1,14 +1,40 @@
 {
   "name": "@questlog/desktop",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
     "start": "electron .",
+    "prepare-pack": "node scripts/prepare-pack.mjs",
+    "pack:win": "node scripts/prepare-pack.mjs && electron-builder --win portable dir --publish never",
     "typecheck": "node -e \"process.exit(0)\""
   },
   "devDependencies": {
-    "electron": "^37.2.6"
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "dev.questlog.app",
+    "productName": "QuestLog",
+    "copyright": "Copyright © QuestLog",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": ["src/main.mjs", "package.json"],
+    "extraResources": [
+      {
+        "from": "pack-staging",
+        "to": "runtime"
+      }
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "win": {
+      "signAndEditExecutable": false,
+      "target": ["portable", "dir"]
+    }
   }
 }

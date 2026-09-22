@@ -6,12 +6,6 @@ import { app, BrowserWindow } from "electron";
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(desktopDir, "../../..");
-const webDist = join(repoRoot, "apps/web/dist");
-const serverEntry = join(repoRoot, "apps/server/src/index.ts");
-const tsxCliCandidates = [
-  join(repoRoot, "apps/server/node_modules/tsx/dist/cli.mjs"),
-  join(repoRoot, "node_modules/tsx/dist/cli.mjs"),
-];
 
 const HOST = "127.0.0.1";
 const PORT = Number(process.env.QUESTLOG_PORT?.trim() || "8787");
@@ -23,7 +17,46 @@ let serverProcess = null;
 let mainWindow = null;
 let stopping = false;
 
-function resolveNodeBinary() {
+function resolveRuntime() {
+  if (app.isPackaged) {
+    const resources = process.resourcesPath;
+    const webDist = join(resources, "runtime/web");
+    const serverEntry = join(resources, "runtime/server/dist/index.js");
+    const nodeBinary = join(resources, "runtime/node/node.exe");
+    return {
+      mode: "packaged",
+      cwd: join(resources, "runtime/server"),
+      webDist,
+      serverEntry,
+      nodeBinary,
+      serverArgs: [serverEntry],
+    };
+  }
+
+  const webDist = join(repoRoot, "apps/web/dist");
+  const serverEntry = join(repoRoot, "apps/server/src/index.ts");
+  const tsxCliCandidates = [
+    join(repoRoot, "apps/server/node_modules/tsx/dist/cli.mjs"),
+    join(repoRoot, "node_modules/tsx/dist/cli.mjs"),
+  ];
+  const tsxCli = tsxCliCandidates.find((candidate) => existsSync(candidate));
+  if (!tsxCli) {
+    throw new Error(
+      `tsx not found. Tried:\n${tsxCliCandidates.join("\n")}\nRun: pnpm setup`,
+    );
+  }
+
+  return {
+    mode: "dev",
+    cwd: repoRoot,
+    webDist,
+    serverEntry,
+    nodeBinary: resolveDevNodeBinary(),
+    serverArgs: [tsxCli, serverEntry],
+  };
+}
+
+function resolveDevNodeBinary() {
   if (process.env.QUESTLOG_NODE?.trim()) {
     return process.env.QUESTLOG_NODE.trim();
   }
@@ -33,38 +66,29 @@ function resolveNodeBinary() {
   return "node";
 }
 
-function resolveTsxCli() {
-  const found = tsxCliCandidates.find((candidate) => existsSync(candidate));
-  if (!found) {
+function assertReadyToStart(runtime) {
+  if (!existsSync(runtime.webDist)) {
     throw new Error(
-      `tsx not found. Tried:\n${tsxCliCandidates.join("\n")}\nRun: pnpm setup`,
+      `Web build missing at ${runtime.webDist}. Run: pnpm --filter @questlog/web build`,
     );
   }
-  return found;
-}
-
-function assertReadyToStart() {
-  if (!existsSync(webDist)) {
-    throw new Error(
-      `Web build missing at ${webDist}. Run: pnpm --filter @questlog/web build`,
-    );
+  if (!existsSync(runtime.serverEntry)) {
+    throw new Error(`Server entry missing: ${runtime.serverEntry}`);
   }
-  if (!existsSync(serverEntry)) {
-    throw new Error(`Server entry missing: ${serverEntry}`);
+  if (runtime.mode === "packaged" && !existsSync(runtime.nodeBinary)) {
+    throw new Error(`Bundled Node missing: ${runtime.nodeBinary}`);
   }
-  resolveTsxCli();
 }
 
 function startServer() {
-  assertReadyToStart();
+  const runtime = resolveRuntime();
+  assertReadyToStart(runtime);
 
-  const nodeBinary = resolveNodeBinary();
-  const tsxCli = resolveTsxCli();
-  serverProcess = spawn(nodeBinary, [tsxCli, serverEntry], {
-    cwd: repoRoot,
+  serverProcess = spawn(runtime.nodeBinary, runtime.serverArgs, {
+    cwd: runtime.cwd,
     env: {
       ...process.env,
-      QUESTLOG_WEB_DIST: webDist,
+      QUESTLOG_WEB_DIST: runtime.webDist,
       QUESTLOG_PORT: String(PORT),
     },
     stdio: "inherit",

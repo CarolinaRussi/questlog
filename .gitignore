@@ -18,3 +18,8 @@ coverage/
 *.db-shm
 *.db-wal
 tmp/
+
+# Desktop pack artifacts (local)
+apps/desktop/pack-staging/
+apps/desktop/release/
+apps/desktop/.cache/
