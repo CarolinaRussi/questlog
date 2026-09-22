@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ProfileSettings } from "./features/profile/ProfileSettings";
 import { ProfileWizard } from "./features/profile/ProfileWizard";
+import { QuestBoard } from "./features/quests/QuestBoard";
 import { fetchHealth, fetchProfile } from "./shared/lib/api";
 
 type Screen = "board" | "settings";
@@ -25,7 +26,7 @@ export function App() {
     healthQuery.isLoading || (healthQuery.isSuccess && profileQuery.isLoading);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-6 py-12">
+    <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-6 py-12">
       <header className="space-y-2">
         <p
           className="text-sm font-semibold tracking-[0.2em] uppercase"
@@ -71,36 +72,10 @@ export function App() {
       ) : null}
 
       {!apiDown && !loading && profileQuery.data && screen === "board" ? (
-        <section className="panel space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2
-                className="text-2xl font-bold"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
-                Board
-              </h2>
-              <p style={{ color: "var(--ql-muted)" }}>
-                Perfil <strong>{profileQuery.data.name}</strong> pronto. Lista
-                de quests na fatia 1.12.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="rounded-xl border px-3 py-2 text-sm font-semibold"
-              style={{ borderColor: "var(--ql-border)" }}
-              onClick={() => setScreen("settings")}
-            >
-              Settings
-            </button>
-          </div>
-          {healthQuery.data ? (
-            <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-              API OK · core {healthQuery.data.core} ·{" "}
-              {profileQuery.data.repos.length} repo(s)
-            </p>
-          ) : null}
-        </section>
+        <QuestBoard
+          profile={profileQuery.data}
+          onOpenSettings={() => setScreen("settings")}
+        />
       ) : null}
     </main>
   );
