@@ -293,18 +293,15 @@ Job: acompanhar o que está em andamento (`falta`) e lembrar o que foi feito (cu
 
 Decisões travadas:
 1. Home = foco no **agora**
-2. Home = **todas as quests abertas** (`ativa` \| `pausada`), no mesmo formato de épico — dá pra abrir e ler rápido
+2. Home = **todas as quests abertas**, em dois blocos: **Em andamento** (`ativa`) e **Pausadas / pendentes** (`pausada`) — mesmo formato de card / detalhe
 3. Cards = **épico** + **próxima falta** visível (quando houver falta de verdade)
-4. Detalhe: **falta → tarefas → ações → resumo Gemini**
-5. Chrome: **Nova quest** discreta; refresh/inbox/arquivo/settings fora do 1º viewport
-6. Promove / watching: útil pra foco de ingest; **não** é pré-requisito pra aparecer na home
-7. Falta no card: ativa do ingest → pausada com falta real → fallback
-8. Currículo: detalhe + **Copiar resumo** (página Memória depois)
-9. Empty: **guiado** quando não há abertas
-10. Arquivo: **quests feitas** (histórico) + busca por projeto/épico
-11. Schema: **`falta_source`** (`user` \| `import`) + **`watching`**
-
-“Em acompanhamento” (watching / falta user / commit) continua existindo pro ingest e prioridade de falta — mas a home lista **tudo aberto**.
+4. Sem épico: também **abre** detalhe (falta / ações / commits)
+5. Detalhe de épico: **falta → tarefas → ações → resumo Gemini**
+6. Chrome: **Nova quest** discreta; refresh/inbox/arquivo/settings fora do 1º viewport
+7. Watching / promove: foco de ingest; **não** esconde abertas da home
+8. Currículo: detalhe + **Copiar resumo**
+9. Arquivo: **quests feitas** + busca
+10. Schema: **`falta_source`** + **`watching`**
 
 | Fatia | Escopo | Commit sugerido |
 |-------|--------|-----------------|

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   activateQuest,
   completeQuest,
@@ -10,6 +10,8 @@ import {
   promoteQuest,
   refreshTickets,
   resumeQuest,
+  ticketHref,
+  type HomeEpicCard,
   type Profile,
   type Quest,
   type QuestStatus,
@@ -28,6 +30,7 @@ type Surface =
   | { kind: "create" }
   | { kind: "pause"; quest: Quest }
   | { kind: "epic"; epicId: string; questId: string | null }
+  | { kind: "quest"; questId: string }
   | { kind: "promote-pause"; quest: Quest };
 
 export function QuestBoard({
@@ -191,7 +194,7 @@ export function QuestBoard({
 
   const home = homeQuery.data;
   const selectedQuest =
-    surface.kind === "epic" && surface.questId
+    (surface.kind === "epic" || surface.kind === "quest") && surface.questId
       ? findQuest(home, surface.questId)
       : null;
 
@@ -200,6 +203,18 @@ export function QuestBoard({
     queryFn: () => fetchCommits({ questId: selectedQuest!.id }),
     enabled: Boolean(selectedQuest),
   });
+
+  const sections = useMemo(() => {
+    if (!home) {
+      return {
+        inProgressEpics: [] as HomeEpicCard[],
+        pendingEpics: [] as HomeEpicCard[],
+        inProgressUngrouped: [] as Quest[],
+        pendingUngrouped: [] as Quest[],
+      };
+    }
+    return splitOpenSections(home.epics, home.ungrouped, profile.activeQuestId);
+  }, [home, profile.activeQuestId]);
 
   if (homeQuery.isLoading) {
     return (
@@ -234,7 +249,7 @@ export function QuestBoard({
             Agora
           </h2>
           <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-            Tudo que ainda está aberto — clique no épico pra ler.
+            Em andamento separado das pausadas — clique pra abrir.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -323,102 +338,63 @@ export function QuestBoard({
         />
       ) : null}
 
-      {home.epics.length > 0 ? (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide">
-            Épicos abertos
-          </h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {home.epics.map((card) => {
-              const open =
-                surface.kind === "epic" && surface.epicId === card.epicId;
-              const faltaLine = card.nextFalta?.falta.trim() ?? "";
-              return (
-                <button
-                  key={card.epicId}
-                  type="button"
-                  onClick={() =>
-                    setSurface({
-                      kind: "epic",
-                      epicId: card.epicId,
-                      questId:
-                        card.nextFalta?.questId ?? card.quests[0]?.id ?? null,
-                    })
-                  }
-                  className="rounded-2xl border px-4 py-4 text-left transition hover:border-teal-600"
-                  style={{
-                    borderColor: open ? "var(--ql-accent)" : "var(--ql-border)",
-                    background: open ? "#f0fdfa" : "var(--ql-surface)",
-                  }}
-                >
-                  <p
-                    className="text-lg font-bold"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {card.epicId}
-                  </p>
-                  {card.title ? (
-                    <p className="mt-1 text-sm font-medium leading-snug">
-                      {card.title}
-                    </p>
-                  ) : null}
-                  <p
-                    className="mt-1 text-sm"
-                    style={{ color: "var(--ql-muted)" }}
-                  >
-                    {card.openCount} tarefa(s)
-                  </p>
-                  {faltaLine ? (
-                    <p className="mt-3 text-sm leading-snug">
-                      <span className="font-semibold">Falta: </span>
-                      {faltaLine}
-                    </p>
-                  ) : (
-                    <p
-                      className="mt-3 text-sm"
-                      style={{ color: "var(--ql-muted)" }}
-                    >
-                      Sem falta registrada ainda
-                    </p>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
+      <HomeBucket
+        title="Em andamento"
+        hint="Quests ativas agora."
+        epics={sections.inProgressEpics}
+        ungrouped={sections.inProgressUngrouped}
+        profile={profile}
+        selectedEpicId={
+          surface.kind === "epic" ? surface.epicId : null
+        }
+        selectedQuestId={
+          surface.kind === "quest" ? surface.questId : null
+        }
+        busy={actionMutation.isPending || pauseMutation.isPending}
+        onOpenEpic={(epicId, questId) =>
+          setSurface({ kind: "epic", epicId, questId })
+        }
+        onOpenQuest={(questId) => setSurface({ kind: "quest", questId })}
+        onPause={(quest) => setSurface({ kind: "pause", quest })}
+        onResume={(quest) =>
+          actionMutation.mutate({
+            questId: quest.id,
+            action: quest.status === "pausada" ? "resume" : "activate",
+          })
+        }
+        onFinish={(quest) =>
+          actionMutation.mutate({ questId: quest.id, action: "complete" })
+        }
+      />
 
-      {home.ungrouped.length > 0 ? (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide">
-            Sem épico
-          </h3>
-          <div className="space-y-2">
-            {home.ungrouped.map((quest) => (
-              <QuestRow
-                key={quest.id}
-                quest={quest}
-                active={profile.activeQuestId === quest.id}
-                busy={actionMutation.isPending || pauseMutation.isPending}
-                onPause={() => setSurface({ kind: "pause", quest })}
-                onResume={() =>
-                  actionMutation.mutate({
-                    questId: quest.id,
-                    action:
-                      quest.status === "pausada" ? "resume" : "activate",
-                  })
-                }
-                onFinish={() =>
-                  actionMutation.mutate({
-                    questId: quest.id,
-                    action: "complete",
-                  })
-                }
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <HomeBucket
+        title="Pausadas / pendentes"
+        hint="Abertas, mas não em andamento — ainda dá pra abrir e ler."
+        epics={sections.pendingEpics}
+        ungrouped={sections.pendingUngrouped}
+        profile={profile}
+        selectedEpicId={
+          surface.kind === "epic" ? surface.epicId : null
+        }
+        selectedQuestId={
+          surface.kind === "quest" ? surface.questId : null
+        }
+        busy={actionMutation.isPending || pauseMutation.isPending}
+        onOpenEpic={(epicId, questId) =>
+          setSurface({ kind: "epic", epicId, questId })
+        }
+        onOpenQuest={(questId) => setSurface({ kind: "quest", questId })}
+        onPause={(quest) => setSurface({ kind: "pause", quest })}
+        onResume={(quest) =>
+          actionMutation.mutate({
+            questId: quest.id,
+            action: quest.status === "pausada" ? "resume" : "activate",
+          })
+        }
+        onFinish={(quest) =>
+          actionMutation.mutate({ questId: quest.id, action: "complete" })
+        }
+      />
 
       {surface.kind === "create" ? (
         <Sheet onClose={() => setSurface({ kind: "idle" })} title="Nova quest">
@@ -559,6 +535,36 @@ export function QuestBoard({
           />
         </Sheet>
       ) : null}
+
+      {surface.kind === "quest" && selectedQuest ? (
+        <Sheet
+          onClose={() => setSurface({ kind: "idle" })}
+          title="Detalhe da quest"
+        >
+          <QuestDetailPanel
+            quest={selectedQuest}
+            profile={profile}
+            busy={actionMutation.isPending}
+            commits={commitsQuery.data ?? []}
+            onPause={() =>
+              setSurface({ kind: "pause", quest: selectedQuest })
+            }
+            onResume={() =>
+              actionMutation.mutate({
+                questId: selectedQuest.id,
+                action:
+                  selectedQuest.status === "pausada" ? "resume" : "activate",
+              })
+            }
+            onFinish={() =>
+              actionMutation.mutate({
+                questId: selectedQuest.id,
+                action: "complete",
+              })
+            }
+          />
+        </Sheet>
+      ) : null}
     </div>
   );
 }
@@ -590,7 +596,7 @@ function EmptyHome({
       >
         Crie uma quest
         {onOpenArchive
-          ? " ou abra o Arquivo para acompanhar algo importado do Jira."
+          ? " ou reabra algo feito no Arquivo."
           : "."}
       </p>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -617,9 +623,215 @@ function EmptyHome({
   );
 }
 
+function HomeBucket({
+  title,
+  hint,
+  epics,
+  ungrouped,
+  profile,
+  selectedEpicId,
+  selectedQuestId,
+  busy,
+  onOpenEpic,
+  onOpenQuest,
+  onPause,
+  onResume,
+  onFinish,
+}: {
+  title: string;
+  hint: string;
+  epics: HomeEpicCard[];
+  ungrouped: Quest[];
+  profile: Profile;
+  selectedEpicId: string | null;
+  selectedQuestId: string | null;
+  busy: boolean;
+  onOpenEpic: (epicId: string, questId: string | null) => void;
+  onOpenQuest: (questId: string) => void;
+  onPause: (quest: Quest) => void;
+  onResume: (quest: Quest) => void;
+  onFinish: (quest: Quest) => void;
+}) {
+  if (epics.length === 0 && ungrouped.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-wide">
+          {title}
+        </h3>
+        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+          {hint}
+        </p>
+      </div>
+
+      {epics.length > 0 ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {epics.map((card) => {
+            const open = selectedEpicId === card.epicId;
+            const faltaLine = card.nextFalta?.falta.trim() ?? "";
+            return (
+              <button
+                key={`${title}-${card.epicId}`}
+                type="button"
+                onClick={() =>
+                  onOpenEpic(
+                    card.epicId,
+                    card.nextFalta?.questId ?? card.quests[0]?.id ?? null,
+                  )
+                }
+                className="rounded-2xl border px-4 py-4 text-left transition hover:border-teal-600"
+                style={{
+                  borderColor: open ? "var(--ql-accent)" : "var(--ql-border)",
+                  background: open ? "#f0fdfa" : "var(--ql-surface)",
+                }}
+              >
+                <p
+                  className="text-lg font-bold"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {card.epicId}
+                </p>
+                {card.title ? (
+                  <p className="mt-1 text-sm font-medium leading-snug">
+                    {card.title}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-sm" style={{ color: "var(--ql-muted)" }}>
+                  {card.openCount} tarefa(s)
+                </p>
+                {faltaLine ? (
+                  <p className="mt-3 text-sm leading-snug">
+                    <span className="font-semibold">Falta: </span>
+                    {faltaLine}
+                  </p>
+                ) : (
+                  <p
+                    className="mt-3 text-sm"
+                    style={{ color: "var(--ql-muted)" }}
+                  >
+                    Sem falta registrada ainda
+                  </p>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {ungrouped.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--ql-muted)" }}>
+            Sem épico
+          </p>
+          {ungrouped.map((quest) => (
+            <QuestRow
+              key={quest.id}
+              quest={quest}
+              active={
+                profile.activeQuestId === quest.id ||
+                selectedQuestId === quest.id
+              }
+              busy={busy}
+              onOpen={() => onOpenQuest(quest.id)}
+              onPause={() => onPause(quest)}
+              onResume={() => onResume(quest)}
+              onFinish={() => onFinish(quest)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function QuestDetailPanel({
+  quest,
+  profile,
+  busy,
+  commits,
+  onPause,
+  onResume,
+  onFinish,
+}: {
+  quest: Quest;
+  profile: Profile;
+  busy: boolean;
+  commits: { id: string; assunto: string }[];
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <p className="text-xs font-semibold uppercase tracking-wide">
+          {statusLabel(quest.status)}
+          {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
+        </p>
+        <h3
+          className="text-xl font-bold leading-snug"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          {quest.titulo}
+        </h3>
+      </div>
+
+      {quest.ticketIds.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {quest.ticketIds.map((ticketId) => {
+            const href = ticketHref(profile.ticketBaseUrl, ticketId);
+            return href ? (
+              <a
+                key={ticketId}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border px-2.5 py-1 text-sm"
+                style={{ borderColor: "var(--ql-border)" }}
+              >
+                {ticketId}
+              </a>
+            ) : (
+              <span
+                key={ticketId}
+                className="rounded-full border px-2.5 py-1 text-sm"
+                style={{ borderColor: "var(--ql-border)" }}
+              >
+                {ticketId}
+              </span>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {quest.faltaSource === "user" && quest.falta.trim() ? (
+        <div className="rounded-xl px-3 py-3" style={{ background: "#f0fdf4" }}>
+          <p className="text-xs font-semibold uppercase tracking-wide">
+            O que falta
+          </p>
+          <p className="mt-1 text-base font-medium">{quest.falta}</p>
+        </div>
+      ) : null}
+
+      <QuestActionsBlock
+        quest={quest}
+        busy={busy}
+        commits={commits}
+        onPause={onPause}
+        onResume={onResume}
+        onFinish={onFinish}
+      />
+    </div>
+  );
+}
+
 function QuestRow({
   quest,
   active,
+  onOpen,
   onPause,
   onResume,
   onFinish,
@@ -627,6 +839,7 @@ function QuestRow({
 }: {
   quest: Quest;
   active: boolean;
+  onOpen: () => void;
   onPause: () => void;
   onResume: () => void;
   onFinish: () => void;
@@ -640,15 +853,18 @@ function QuestRow({
         background: active ? "#f0fdfa" : "#fff",
       }}
     >
-      <div className="min-w-0">
+      <button type="button" className="min-w-0 flex-1 text-left" onClick={onOpen}>
         <p className="font-medium">{quest.titulo}</p>
         <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
           {statusLabel(quest.status)}
           {quest.faltaSource === "user" && quest.falta
             ? ` · falta: ${quest.falta.slice(0, 60)}${quest.falta.length > 60 ? "…" : ""}`
             : ""}
+          <span className="ml-1 font-semibold" style={{ color: "var(--ql-accent)" }}>
+            · abrir
+          </span>
         </p>
-      </div>
+      </button>
       <div className="flex flex-wrap gap-2">
         {quest.status === "pausada" || quest.status === "feita" ? (
           <button
@@ -819,6 +1035,76 @@ function findQuest(
     if (found) return found;
   }
   return home.ungrouped.find((quest) => quest.id === questId) ?? null;
+}
+
+function splitOpenSections(
+  epics: HomeEpicCard[],
+  ungrouped: Quest[],
+  activeQuestId: string | null,
+): {
+  inProgressEpics: HomeEpicCard[];
+  pendingEpics: HomeEpicCard[];
+  inProgressUngrouped: Quest[];
+  pendingUngrouped: Quest[];
+} {
+  const inProgressEpics: HomeEpicCard[] = [];
+  const pendingEpics: HomeEpicCard[] = [];
+
+  for (const card of epics) {
+    const ativas = card.quests.filter((quest) => quest.status === "ativa");
+    const pausadas = card.quests.filter((quest) => quest.status === "pausada");
+    if (ativas.length > 0) {
+      inProgressEpics.push({
+        ...card,
+        quests: ativas,
+        openCount: ativas.length,
+        nextFalta: pickNextFaltaLocal(ativas, activeQuestId),
+      });
+    }
+    if (pausadas.length > 0) {
+      pendingEpics.push({
+        ...card,
+        quests: pausadas,
+        openCount: pausadas.length,
+        nextFalta: pickNextFaltaLocal(pausadas, activeQuestId),
+      });
+    }
+  }
+
+  return {
+    inProgressEpics,
+    pendingEpics,
+    inProgressUngrouped: ungrouped.filter((quest) => quest.status === "ativa"),
+    pendingUngrouped: ungrouped.filter((quest) => quest.status === "pausada"),
+  };
+}
+
+function pickNextFaltaLocal(
+  quests: Quest[],
+  activeQuestId: string | null,
+): HomeEpicCard["nextFalta"] {
+  if (quests.length === 0) return null;
+  const active = quests.find((quest) => quest.id === activeQuestId);
+  const pausedWithFalta = quests
+    .filter(
+      (quest) =>
+        quest.status === "pausada" &&
+        quest.faltaSource === "user" &&
+        quest.falta.trim().length > 0,
+    )
+    .sort(
+      (left, right) =>
+        new Date(right.atualizadoEm).getTime() -
+        new Date(left.atualizadoEm).getTime(),
+    );
+  const picked = active ?? pausedWithFalta[0] ?? quests[0];
+  if (!picked) return null;
+  return {
+    questId: picked.id,
+    titulo: picked.titulo,
+    falta:
+      picked.faltaSource === "user" && picked.falta.trim() ? picked.falta : "",
+  };
 }
 
 function statusLabel(status: QuestStatus): string {
