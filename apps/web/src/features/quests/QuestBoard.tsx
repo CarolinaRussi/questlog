@@ -13,6 +13,7 @@ import {
   type Quest,
   type QuestStatus,
 } from "../../shared/lib/api";
+import { PauseQuestPanel } from "./PauseQuestPanel";
 
 type QuestBoardProps = {
   profile: Profile;
@@ -25,7 +26,7 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
   const [showFeitas, setShowFeitas] = useState(false);
   const [newTitulo, setNewTitulo] = useState("");
   const [newTickets, setNewTickets] = useState("");
-  const [pauseFalta, setPauseFalta] = useState("");
+  const [pausingQuestId, setPausingQuestId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const questsQuery = useQuery({
@@ -76,9 +77,10 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
   });
 
   const pauseMutation = useMutation({
-    mutationFn: (questId: string) => pauseQuest(questId, pauseFalta.trim()),
+    mutationFn: ({ questId, falta }: { questId: string; falta: string }) =>
+      pauseQuest(questId, falta),
     onSuccess: () => {
-      setPauseFalta("");
+      setPausingQuestId(null);
       setFormError(null);
       invalidateBoard();
     },
@@ -108,7 +110,8 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
     },
   });
 
-  const ativas = questsQuery.data?.filter((quest) => quest.status === "ativa") ?? [];
+  const ativas =
+    questsQuery.data?.filter((quest) => quest.status === "ativa") ?? [];
   const pausadas =
     questsQuery.data?.filter((quest) => quest.status === "pausada") ?? [];
   const feitas =
@@ -195,14 +198,20 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
               quests={ativas}
               selectedQuestId={selectedQuestId}
               activeQuestId={profile.activeQuestId}
-              onSelect={setSelectedQuestId}
+              onSelect={(questId) => {
+                setSelectedQuestId(questId);
+                setPausingQuestId(null);
+              }}
             />
             <QuestGroup
               title="Pausadas"
               quests={pausadas}
               selectedQuestId={selectedQuestId}
               activeQuestId={profile.activeQuestId}
-              onSelect={setSelectedQuestId}
+              onSelect={(questId) => {
+                setSelectedQuestId(questId);
+                setPausingQuestId(null);
+              }}
             />
             <section className="panel space-y-2">
               <div className="flex items-center justify-between">
@@ -241,7 +250,10 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
                     quests={feitas}
                     selectedQuestId={selectedQuestId}
                     activeQuestId={profile.activeQuestId}
-                    onSelect={setSelectedQuestId}
+                    onSelect={(questId) => {
+                      setSelectedQuestId(questId);
+                      setPausingQuestId(null);
+                    }}
                   />
                 </div>
               ) : null}
@@ -310,91 +322,92 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
                   </div>
                 ) : null}
 
-                {selectedQuest.status === "ativa" ||
-                selectedQuest.status === "pausada" ? (
-                  <div className="space-y-2">
-                    {selectedQuest.status === "ativa" ? (
-                      <>
-                        <textarea
-                          className="field min-h-20"
-                          placeholder="O que falta ao pausar?"
-                          value={pauseFalta}
-                          onChange={(event) => setPauseFalta(event.target.value)}
-                        />
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            className="rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                            style={{ background: "var(--ql-accent)" }}
-                            disabled={
-                              pauseMutation.isPending || !pauseFalta.trim()
-                            }
-                            onClick={() => pauseMutation.mutate(selectedQuest.id)}
-                          >
-                            Pausar
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-xl border px-3 py-2 text-sm font-semibold"
-                            style={{ borderColor: "var(--ql-border)" }}
-                            disabled={actionMutation.isPending}
-                            onClick={() =>
-                              actionMutation.mutate({
-                                questId: selectedQuest.id,
-                                action: "activate",
-                              })
-                            }
-                          >
-                            Definir ativa
-                          </button>
-                          <button
-                            type="button"
-                            className="rounded-xl border px-3 py-2 text-sm font-semibold"
-                            style={{ borderColor: "var(--ql-border)" }}
-                            disabled={actionMutation.isPending}
-                            onClick={() =>
-                              actionMutation.mutate({
-                                questId: selectedQuest.id,
-                                action: "complete",
-                              })
-                            }
-                          >
-                            Marcar feita
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
-                          style={{ background: "var(--ql-accent)" }}
-                          disabled={actionMutation.isPending}
-                          onClick={() =>
-                            actionMutation.mutate({
-                              questId: selectedQuest.id,
-                              action: "resume",
-                            })
-                          }
-                        >
-                          Retomar
-                        </button>
-                        <button
-                          type="button"
-                          className="rounded-xl border px-3 py-2 text-sm font-semibold"
-                          style={{ borderColor: "var(--ql-border)" }}
-                          disabled={actionMutation.isPending}
-                          onClick={() =>
-                            actionMutation.mutate({
-                              questId: selectedQuest.id,
-                              action: "complete",
-                            })
-                          }
-                        >
-                          Marcar feita
-                        </button>
-                      </div>
-                    )}
+                {pausingQuestId === selectedQuest.id ? (
+                  <PauseQuestPanel
+                    questTitulo={selectedQuest.titulo}
+                    isPending={pauseMutation.isPending}
+                    onCancel={() => setPausingQuestId(null)}
+                    onConfirm={(falta) =>
+                      pauseMutation.mutate({
+                        questId: selectedQuest.id,
+                        falta,
+                      })
+                    }
+                  />
+                ) : null}
+
+                {selectedQuest.status === "ativa" &&
+                pausingQuestId !== selectedQuest.id ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
+                      style={{ background: "var(--ql-accent)" }}
+                      onClick={() => setPausingQuestId(selectedQuest.id)}
+                    >
+                      Pausar…
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl border px-3 py-2 text-sm font-semibold"
+                      style={{ borderColor: "var(--ql-border)" }}
+                      disabled={actionMutation.isPending}
+                      onClick={() =>
+                        actionMutation.mutate({
+                          questId: selectedQuest.id,
+                          action: "activate",
+                        })
+                      }
+                    >
+                      Definir ativa
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl border px-3 py-2 text-sm font-semibold"
+                      style={{ borderColor: "var(--ql-border)" }}
+                      disabled={actionMutation.isPending}
+                      onClick={() =>
+                        actionMutation.mutate({
+                          questId: selectedQuest.id,
+                          action: "complete",
+                        })
+                      }
+                    >
+                      Marcar feita
+                    </button>
+                  </div>
+                ) : null}
+
+                {selectedQuest.status === "pausada" ? (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
+                      style={{ background: "var(--ql-accent)" }}
+                      disabled={actionMutation.isPending}
+                      onClick={() =>
+                        actionMutation.mutate({
+                          questId: selectedQuest.id,
+                          action: "resume",
+                        })
+                      }
+                    >
+                      Retomar
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl border px-3 py-2 text-sm font-semibold"
+                      style={{ borderColor: "var(--ql-border)" }}
+                      disabled={actionMutation.isPending}
+                      onClick={() =>
+                        actionMutation.mutate({
+                          questId: selectedQuest.id,
+                          action: "complete",
+                        })
+                      }
+                    >
+                      Marcar feita
+                    </button>
                   </div>
                 ) : null}
 
