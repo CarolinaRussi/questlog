@@ -25,3 +25,26 @@ body {
     radial-gradient(circle at top left, #e7f0ea 0%, transparent 45%),
     linear-gradient(160deg, var(--ql-bg), #ebe4d6 60%, #e4ddd0);
 }
+
+.panel {
+  border: 1px solid var(--ql-border);
+  border-radius: 1rem;
+  background: var(--ql-panel);
+  padding: 1.25rem 1.35rem;
+  box-shadow: 0 1px 2px rgb(28 25 23 / 0.04);
+}
+
+.field {
+  width: 100%;
+  border: 1px solid var(--ql-border);
+  border-radius: 0.75rem;
+  background: #fff;
+  padding: 0.6rem 0.75rem;
+  color: var(--ql-ink);
+  outline: none;
+}
+
+.field:focus {
+  border-color: var(--ql-accent);
+  box-shadow: 0 0 0 3px rgb(15 118 110 / 0.15);
+}
