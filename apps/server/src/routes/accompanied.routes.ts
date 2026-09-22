@@ -5,6 +5,7 @@ import {
   listArchiveQuests,
   listArchiveSuggestions,
   pickNextFaltaForEpic,
+  promoteEpic,
   promoteQuest,
   promoteQuestInputSchema,
   getProfile,
@@ -71,5 +72,13 @@ export async function registerAccompaniedRoutes(
     const { id } = idParamsSchema.parse(request.params);
     const body = promoteQuestInputSchema.parse(request.body ?? {});
     return promoteQuest(id, body);
+  });
+
+  app.post("/api/epics/:epicId/promote", async (request) => {
+    const { epicId } = z
+      .object({ epicId: z.string().trim().min(1) })
+      .parse(request.params);
+    const body = promoteQuestInputSchema.parse(request.body ?? {});
+    return promoteEpic(epicId, body);
   });
 }

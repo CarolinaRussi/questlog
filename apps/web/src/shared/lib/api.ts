@@ -343,6 +343,30 @@ export async function promoteQuest(
   return (await response.json()) as Quest;
 }
 
+export type PromoteEpicResult = {
+  epicId: string;
+  promoted: number;
+  quests: Quest[];
+};
+
+export async function promoteEpic(
+  epicId: string,
+  body: { mode?: "watch" | "resume" } = {},
+): Promise<PromoteEpicResult> {
+  const response = await fetch(
+    `/api/epics/${encodeURIComponent(epicId)}/promote`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as PromoteEpicResult;
+}
+
 export function ticketHref(baseUrl: string, ticketId: string): string | null {
   if (!baseUrl.trim()) return null;
   return `${baseUrl.replace(/\/?$/, "/")}${ticketId}`;

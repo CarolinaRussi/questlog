@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import {
   fetchArchive,
   fetchCommits,
+  promoteEpic,
   promoteQuest,
   type Profile,
   type Quest,
@@ -65,6 +66,28 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
     onError: (error) => {
       setErrorFeedback(
         error instanceof Error ? error.message : "Erro ao promover",
+      );
+    },
+  });
+
+  const promoteEpicMutation = useMutation({
+    mutationFn: (epicId: string) => promoteEpic(epicId, { mode: "watch" }),
+    onSuccess: (result) => {
+      setSelectedEpicId(null);
+      setSelectedQuestId(null);
+      setErrorFeedback(null);
+      setFeedback(
+        result.promoted === 0
+          ? "Nenhuma tarefa nesse épico."
+          : `Épico ${result.epicId}: ${result.promoted} tarefa(s) no agora.`,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["board-archive"] });
+      void queryClient.invalidateQueries({ queryKey: ["board-home"] });
+      void queryClient.invalidateQueries({ queryKey: ["board-revision"] });
+    },
+    onError: (error) => {
+      setErrorFeedback(
+        error instanceof Error ? error.message : "Erro ao acompanhar épico",
       );
     },
   });
@@ -235,14 +258,9 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
             {epics.map((group) => (
-              <button
+              <div
                 key={group.epicId}
-                type="button"
-                onClick={() => {
-                  setSelectedEpicId(group.epicId);
-                  setSelectedQuestId(group.quests[0]?.id ?? null);
-                }}
-                className="rounded-2xl border px-4 py-4 text-left transition hover:border-teal-600"
+                className="rounded-2xl border px-4 py-4"
                 style={{
                   borderColor:
                     selectedEpicId === group.epicId
@@ -254,19 +272,53 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
                       : "var(--ql-surface)",
                 }}
               >
-                <p
-                  className="text-lg font-bold"
-                  style={{ fontFamily: "var(--font-display)" }}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedEpicId(group.epicId);
+                    setSelectedQuestId(group.quests[0]?.id ?? null);
+                  }}
+                  className="w-full text-left"
                 >
-                  {group.epicId}
-                </p>
-                <p className="mt-1 text-sm" style={{ color: "var(--ql-muted)" }}>
-                  {group.quests.length} tarefa(s)
-                  {group.openCount > 0
-                    ? ` · ${group.openCount} aberta(s)`
-                    : " · todas feitas"}
-                </p>
-              </button>
+                  <p
+                    className="text-lg font-bold"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {group.epicId}
+                  </p>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--ql-muted)" }}
+                  >
+                    {group.quests.length} tarefa(s)
+                    {group.openCount > 0
+                      ? ` · ${group.openCount} aberta(s)`
+                      : " · todas feitas"}
+                  </p>
+                </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                    style={{ background: "var(--ql-accent)" }}
+                    disabled={promoteEpicMutation.isPending}
+                    onClick={() => promoteEpicMutation.mutate(group.epicId)}
+                  >
+                    Acompanhar épico
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
+                    style={{ borderColor: "var(--ql-border)" }}
+                    onClick={() => {
+                      setSelectedEpicId(group.epicId);
+                      setSelectedQuestId(group.quests[0]?.id ?? null);
+                    }}
+                  >
+                    Abrir
+                  </button>
+                </div>
+              </div>
             ))}
           </div>
         </section>
@@ -317,24 +369,37 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
             className="relative z-10 h-full w-full max-w-xl overflow-y-auto border-l bg-white p-5 shadow-xl"
             style={{ borderColor: "var(--ql-border)" }}
           >
-            <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <h3
                 className="text-lg font-bold"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Arquivo · {selectedEpicId}
               </h3>
-              <button
-                type="button"
-                className="rounded-lg border px-2 py-1 text-sm"
-                style={{ borderColor: "var(--ql-border)" }}
-                onClick={() => {
-                  setSelectedEpicId(null);
-                  setSelectedQuestId(null);
-                }}
-              >
-                Fechar
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+                  style={{ background: "var(--ql-accent)" }}
+                  disabled={promoteEpicMutation.isPending}
+                  onClick={() => promoteEpicMutation.mutate(selectedEpicId)}
+                >
+                  {promoteEpicMutation.isPending
+                    ? "Acompanhando…"
+                    : "Acompanhar épico"}
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border px-2 py-1 text-sm"
+                  style={{ borderColor: "var(--ql-border)" }}
+                  onClick={() => {
+                    setSelectedEpicId(null);
+                    setSelectedQuestId(null);
+                  }}
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
             <EpicDetailPanel
               epicId={selectedEpicId}

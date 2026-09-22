@@ -223,3 +223,63 @@ export async function promoteQuest(
   await quest.save();
   return quest;
 }
+
+/**
+ * Promote every quest under an epic (watch = accompany whole epic).
+ * Pause is not supported here — falta is per quest.
+ */
+export async function promoteEpic(
+  epicId: string,
+  rawInput: PromoteQuestInput = { mode: "watch" },
+): Promise<{ epicId: string; promoted: number; quests: Quest[] }> {
+  const input = promoteQuestInputSchema.parse(rawInput);
+  if (input.mode === "pause") {
+    throw new Error(
+      "pause requires falta per quest; promote quests individually",
+    );
+  }
+
+  const profile = await getProfile();
+  if (!profile) {
+    throw new ProfileRequiredError();
+  }
+
+  const normalized = epicId.trim().toUpperCase();
+  if (!normalized) {
+    throw new Error("epicId is required");
+  }
+
+  const quests = await Quest.find({
+    where: { profileId: profile.id },
+    order: { atualizadoEm: "DESC" },
+  });
+  const inEpic = quests.filter(
+    (quest) => quest.epicId?.trim().toUpperCase() === normalized,
+  );
+
+  const promoted: Quest[] = [];
+  for (const quest of inEpic) {
+    promoted.push(await promoteQuest(quest.id, { mode: "watch" }));
+  }
+
+  if (input.mode === "resume" && promoted.length > 0) {
+    const firstOpen =
+      promoted.find((quest) => quest.status !== "feita") ?? promoted[0];
+    if (firstOpen) {
+      await resumeQuest(firstOpen.id);
+      await setActiveQuest(firstOpen.id);
+      const refreshed = await Quest.findOneBy({ id: firstOpen.id });
+      if (refreshed) {
+        const index = promoted.findIndex((quest) => quest.id === refreshed.id);
+        if (index >= 0) promoted[index] = refreshed;
+      }
+    }
+  }
+
+  return {
+    epicId: normalized,
+    promoted: promoted.length,
+    quests: promoted,
+  };
+}
+

@@ -51,6 +51,7 @@ export {
   listArchiveQuests,
   listArchiveSuggestions,
   promoteQuest,
+  promoteEpic,
   promoteQuestInputSchema,
   type PromoteQuestInput,
 } from "./use-cases/accompanied.js";

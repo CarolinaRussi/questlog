@@ -11,6 +11,7 @@ import {
   isImportFaltaStub,
   listAccompaniedQuests,
   pickNextFaltaForEpic,
+  promoteEpic,
   promoteQuest,
 } from "./accompanied.js";
 
@@ -91,6 +92,25 @@ try {
   assert.equal(reopened.watching, true);
   const accompaniedAfter = await listAccompaniedQuests();
   assert.ok(accompaniedAfter.some((quest) => quest.id === reopened.id));
+
+  const sibling = Quest.create({
+    profileId: profile.id,
+    titulo: "Sibling",
+    status: "pausada",
+    ticketIds: ["DEMO-7"],
+    epicId: "DEMO-200",
+    epicScope: "partial",
+    repos: [],
+    falta: "Status no Jira: To Do",
+    faltaSource: "import",
+    watching: false,
+    atualizadoEm: new Date(),
+  });
+  await sibling.save();
+
+  const epicPromote = await promoteEpic("DEMO-200", { mode: "watch" });
+  assert.equal(epicPromote.promoted, 2);
+  assert.ok(epicPromote.quests.every((quest) => quest.watching));
 
   await dataSource.destroy();
   console.log("check:accompanied ok");
