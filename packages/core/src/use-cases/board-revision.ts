@@ -1,4 +1,5 @@
 import { Commit } from "../db/entities/commit.entity.js";
+import { EpicNote } from "../db/entities/epic-note.entity.js";
 import { Quest } from "../db/entities/quest.entity.js";
 import { getProfile } from "./profile.js";
 
@@ -36,6 +37,12 @@ export async function getBoardRevision(): Promise<BoardRevision> {
     .where("c.profileId = :profileId", { profileId: profile.id })
     .getRawOne<{ maxAt: string | null; count: string }>();
 
+  const noteAgg = await EpicNote.createQueryBuilder("n")
+    .select("MAX(n.updatedAt)", "maxAt")
+    .addSelect("COUNT(n.id)", "count")
+    .where("n.profileId = :profileId", { profileId: profile.id })
+    .getRawOne<{ maxAt: string | null; count: string }>();
+
   const revision = [
     profile.id,
     profile.activeQuestId ?? "",
@@ -44,6 +51,8 @@ export async function getBoardRevision(): Promise<BoardRevision> {
     questAgg?.count ?? "0",
     toIso(commitAgg?.maxAt),
     commitAgg?.count ?? "0",
+    toIso(noteAgg?.maxAt),
+    noteAgg?.count ?? "0",
   ].join("|");
 
   return { revision };

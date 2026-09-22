@@ -225,6 +225,70 @@ export async function refreshTickets(): Promise<RefreshTicketsResult> {
   return (await response.json()) as RefreshTicketsResult;
 }
 
+export type LocalSecretsPublic = {
+  geminiConfigured: boolean;
+};
+
+export async function fetchSecrets(): Promise<LocalSecretsPublic> {
+  const response = await fetch("/api/secrets");
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as LocalSecretsPublic;
+}
+
+export async function saveSecrets(body: {
+  geminiApiKey?: string | null;
+}): Promise<LocalSecretsPublic> {
+  const response = await fetch("/api/secrets", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as LocalSecretsPublic;
+}
+
+export type EpicNote = {
+  id: string;
+  profileId: string;
+  epicId: string;
+  overview: string;
+  progress: string;
+  updatedAt: string;
+};
+
+export type ComplementEpicNotesResult = {
+  epicId: string;
+  overview: string;
+  progress: string;
+  questCount: number;
+  usedJiraContext: boolean;
+};
+
+export async function fetchEpicNotes(): Promise<EpicNote[]> {
+  const response = await fetch("/api/epics/notes");
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as EpicNote[];
+}
+
+export async function summarizeEpic(
+  epicId: string,
+): Promise<ComplementEpicNotesResult> {
+  const response = await fetch(
+    `/api/epics/${encodeURIComponent(epicId)}/summarize`,
+    { method: "POST" },
+  );
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as ComplementEpicNotesResult;
+}
+
 export function ticketHref(baseUrl: string, ticketId: string): string | null {
   if (!baseUrl.trim()) return null;
   return `${baseUrl.replace(/\/?$/, "/")}${ticketId}`;

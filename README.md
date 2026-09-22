@@ -59,6 +59,9 @@ Se o ingest falhar depois de ler o commit, o payload vai para uma fila local
 `JIRA_API_TOKEN` (ver `.env.example`). Alternativa offline: `--file` com
 `{ "issues": [{ "key", "summary", "status" }] }`.
 
+Resumo de épicos (Gemini): chave em **Settings** na UI (fica em `secrets.json`
+no data dir). Sem chave o board funciona; o botão de resumo pede configuração.
+
 ## Hooks do Cursor
 
 Ver [cursor/HOOKS.md](cursor/HOOKS.md).

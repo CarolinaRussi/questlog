@@ -15,6 +15,7 @@ import {
   type QuestStatus,
 } from "../../shared/lib/api";
 import { PauseQuestPanel } from "./PauseQuestPanel";
+import { EpicNotesPanel } from "./EpicNotesPanel";
 
 type QuestBoardProps = {
   profile: Profile;
@@ -27,6 +28,7 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
   const [showFeitas, setShowFeitas] = useState(false);
   const [newTitulo, setNewTitulo] = useState("");
   const [newTickets, setNewTickets] = useState("");
+  const [newEpicId, setNewEpicId] = useState("");
   const [pausingQuestId, setPausingQuestId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formNotice, setFormNotice] = useState<string | null>(null);
@@ -54,6 +56,7 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
     void queryClient.invalidateQueries({ queryKey: ["quests"] });
     void queryClient.invalidateQueries({ queryKey: ["commits"] });
     void queryClient.invalidateQueries({ queryKey: ["profile"] });
+    void queryClient.invalidateQueries({ queryKey: ["epic-notes"] });
   }
 
   const createMutation = useMutation({
@@ -64,11 +67,15 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
           .split(",")
           .map((ticket) => ticket.trim())
           .filter(Boolean),
+        epicId: profile.ticketHasEpic
+          ? newEpicId.trim() || null
+          : null,
         setActive: true,
       }),
     onSuccess: (quest) => {
       setNewTitulo("");
       setNewTickets("");
+      setNewEpicId("");
       setFormError(null);
       setSelectedQuestId(quest.id);
       invalidateBoard();
@@ -140,6 +147,10 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
     questsQuery.data?.filter((quest) => quest.status === "pausada") ?? [];
   const feitas =
     questsQuery.data?.filter((quest) => quest.status === "feita") ?? [];
+  const openQuests = [...ativas, ...pausadas];
+  const epicGroups = profile.ticketHasEpic
+    ? groupQuestsByEpic(openQuests)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -181,7 +192,11 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
         </div>
 
         <form
-          className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]"
+          className={`grid gap-2 ${
+            profile.ticketHasEpic
+              ? "sm:grid-cols-[1fr_1fr_1fr_auto]"
+              : "sm:grid-cols-[1fr_1fr_auto]"
+          }`}
           onSubmit={(event) => {
             event.preventDefault();
             if (!newTitulo.trim()) return;
@@ -201,6 +216,14 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
             value={newTickets}
             onChange={(event) => setNewTickets(event.target.value)}
           />
+          {profile.ticketHasEpic ? (
+            <input
+              className="field"
+              placeholder="Épico (HESEC-100)"
+              value={newEpicId}
+              onChange={(event) => setNewEpicId(event.target.value)}
+            />
+          ) : null}
           <button
             type="submit"
             disabled={createMutation.isPending}
@@ -230,26 +253,48 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
       {questsQuery.data ? (
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-4">
-            <QuestGroup
-              title="Ativas"
-              quests={ativas}
-              selectedQuestId={selectedQuestId}
-              activeQuestId={profile.activeQuestId}
-              onSelect={(questId) => {
-                setSelectedQuestId(questId);
-                setPausingQuestId(null);
-              }}
-            />
-            <QuestGroup
-              title="Pausadas"
-              quests={pausadas}
-              selectedQuestId={selectedQuestId}
-              activeQuestId={profile.activeQuestId}
-              onSelect={(questId) => {
-                setSelectedQuestId(questId);
-                setPausingQuestId(null);
-              }}
-            />
+            {epicGroups ? (
+              epicGroups.map((group) => (
+                <QuestGroup
+                  key={group.epicId ?? "none"}
+                  title={
+                    group.epicId
+                      ? `Épico ${group.epicId}`
+                      : "Sem épico"
+                  }
+                  quests={group.quests}
+                  selectedQuestId={selectedQuestId}
+                  activeQuestId={profile.activeQuestId}
+                  onSelect={(questId) => {
+                    setSelectedQuestId(questId);
+                    setPausingQuestId(null);
+                  }}
+                />
+              ))
+            ) : (
+              <>
+                <QuestGroup
+                  title="Ativas"
+                  quests={ativas}
+                  selectedQuestId={selectedQuestId}
+                  activeQuestId={profile.activeQuestId}
+                  onSelect={(questId) => {
+                    setSelectedQuestId(questId);
+                    setPausingQuestId(null);
+                  }}
+                />
+                <QuestGroup
+                  title="Pausadas"
+                  quests={pausadas}
+                  selectedQuestId={selectedQuestId}
+                  activeQuestId={profile.activeQuestId}
+                  onSelect={(questId) => {
+                    setSelectedQuestId(questId);
+                    setPausingQuestId(null);
+                  }}
+                />
+              </>
+            )}
             <section className="panel space-y-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold uppercase tracking-wide">
@@ -307,6 +352,9 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
                 <div className="space-y-1">
                   <p className="text-xs font-semibold uppercase tracking-wide">
                     {statusLabel(selectedQuest.status)}
+                    {selectedQuest.epicId
+                      ? ` · épico ${selectedQuest.epicId}`
+                      : ""}
                     {profile.activeQuestId === selectedQuest.id
                       ? " · ativa no ingest"
                       : ""}
@@ -318,6 +366,10 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
                     {selectedQuest.titulo}
                   </h3>
                 </div>
+
+                {selectedQuest.epicId ? (
+                  <EpicNotesPanel epicId={selectedQuest.epicId} />
+                ) : null}
 
                 <div className="flex flex-wrap gap-2">
                   {selectedQuest.ticketIds.map((ticketId) => {
@@ -511,6 +563,31 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
       ) : null}
     </div>
   );
+}
+
+function groupQuestsByEpic(
+  quests: Quest[],
+): Array<{ epicId: string | null; quests: Quest[] }> {
+  const map = new Map<string, Quest[]>();
+  for (const quest of quests) {
+    const key = quest.epicId?.trim().toUpperCase() || "";
+    const list = map.get(key) ?? [];
+    list.push(quest);
+    map.set(key, list);
+  }
+
+  const groups = [...map.entries()].map(([key, groupQuests]) => ({
+    epicId: key.length > 0 ? key : null,
+    quests: groupQuests,
+  }));
+
+  groups.sort((left, right) => {
+    if (left.epicId === null) return 1;
+    if (right.epicId === null) return -1;
+    return left.epicId.localeCompare(right.epicId);
+  });
+
+  return groups;
 }
 
 function QuestGroup({
