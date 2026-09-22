@@ -4,41 +4,69 @@ Quadro pessoal de trabalho em andamento: **quest** (o que você está tocando), 
 
 Local-first · SQLite · API em `127.0.0.1` · hooks do Cursor via CLI.
 
-## Como abrir de manhã
+## Pré-requisitos
 
-Um terminal só:
+- [Node.js](https://nodejs.org/) (LTS) e [pnpm](https://pnpm.io/installation)
+- (Opcional) Cursor IDE, se for usar ingest automático de commits
+- (Opcional) credenciais Jira / chave Gemini — o board funciona sem isso
+
+## Primeira vez
+
+```bash
+pnpm setup
+```
+
+Copie o env de exemplo e preencha só o que for usar (Jira, porta, data dir):
+
+```bash
+cp .env.example .env
+```
+
+Crie o perfil inicial:
+
+```bash
+pnpm seed -- minimal   # genérico — recomendado se não for o time Gran
+# ou
+pnpm seed -- gran      # exemplo HESEC + repos placeholder
+```
+
+Suba API + web:
 
 ```bash
 pnpm start
 ```
 
-Isso builda o `core` e sobe **API + web** juntos. Abra **http://127.0.0.1:5173**.
+Abra **http://127.0.0.1:5173** e no **Settings / wizard**:
 
-### Primeira vez (só uma vez)
+1. Paths **absolutos** dos seus repos monitorados  
+2. Regex de ticket / base URL (se usar links)  
+3. (Opcional) chave Gemini para resumo de épicos  
+
+Dados locais: `%APPDATA%/questlog/` (Windows), `~/Library/Application Support/questlog` (macOS) ou `$XDG_DATA_HOME/questlog` (Linux).  
+Override: `QUESTLOG_DATA_DIR` no `.env`.
+
+## Como abrir de manhã
 
 ```bash
-pnpm setup
-pnpm seed -- gran
+pnpm start
 ```
 
-Depois ajuste os paths dos repos no **wizard/Settings** da UI.
+→ http://127.0.0.1:5173
 
 ### Checklist do dia
 
-1. `pnpm start` → http://127.0.0.1:5173
-2. (Opcional) hook `sessionStart` com `pnpm remind`
-3. Confirmar quest ativa / campo **Falta**
-4. Commits nos repos do perfil → `ingest-commit` atualiza a timeline
+1. Board aberto; quests ativas / pausadas visíveis  
+2. Campo **Falta** quando pausar  
+3. (Opcional) hooks do Cursor → commits caem na timeline sozinhos  
+4. (Opcional) **Status Jira** / `refresh-jira` pra título + status  
 
-## Seed de exemplos
+## Hooks do Cursor (ingest automático)
 
-```bash
-pnpm seed -- gran      # HESEC + 3 repos placeholder
-pnpm seed -- minimal   # um repo genérico
-```
+Sem hooks, o board e o CLI já funcionam. Com hooks, todo `git commit` nos repos do perfil vira timeline.
 
-Dados ficam em `%APPDATA%/questlog/` (Windows), `~/Library/Application Support/questlog` (macOS) ou `$XDG_DATA_HOME/questlog` (Linux).  
-Override: `QUESTLOG_DATA_DIR`.
+Passo a passo + arquivos prontos: **[cursor/HOOKS.md](cursor/HOOKS.md)**.
+
+Resumo: copiar `cursor/hooks.user.example.json` → `~/.cursor/hooks.json`, copiar `cursor/hooks/questlog-*` → `~/.cursor/hooks/`, definir `QUESTLOG_ROOT`, reiniciar o Cursor.
 
 ## CLI
 
@@ -48,23 +76,25 @@ pnpm --filter @questlog/cli ingest-commit
 pnpm --filter @questlog/cli ingest-commit -- --strict
 pnpm --filter @questlog/cli refresh-jira
 pnpm --filter @questlog/cli refresh-jira -- --file path/to/issues.json
+pnpm --filter @questlog/cli import-jira -- --file path/to/export.json
 ```
 
-`ingest-commit` é **fail-open** por padrão (não quebra o `git commit`).
-Se o ingest falhar depois de ler o commit, o payload vai para uma fila local
-(`ingest-queue.json` no data dir) e é reprocessado no próximo `ingest-commit`.
+`ingest-commit` é **fail-open** por padrão (não quebra o `git commit`).  
+Se o ingest falhar depois de ler o commit, o payload vai para `ingest-queue.json` no data dir e é reprocessado no próximo `ingest-commit`.
 
-`refresh-jira` atualiza **só título + status** das tickets já ligadas a quests
-(nunca a descrição do card). Credenciais locais: `JIRA_BASE_URL`, `JIRA_EMAIL`,
-`JIRA_API_TOKEN` (ver `.env.example`). Alternativa offline: `--file` com
-`{ "issues": [{ "key", "summary", "status" }] }`.
+`refresh-jira` atualiza **só título + status** das tickets já ligadas a quests  
+(nunca a descrição do card). Credenciais: `JIRA_BASE_URL`, `JIRA_EMAIL`,  
+`JIRA_API_TOKEN` no `.env` (ver `.env.example`).
 
-Resumo de épicos (Gemini): chave em **Settings** na UI (fica em `secrets.json`
-no data dir). Sem chave o board funciona; o botão de resumo pede configuração.
+Resumo de épicos (Gemini): chave em **Settings** na UI (`secrets.json` no data dir).  
+Sem chave o board funciona; o botão de resumo pede configuração.
 
-## Hooks do Cursor
+## Seed de exemplos
 
-Ver [cursor/HOOKS.md](cursor/HOOKS.md).
+```bash
+pnpm seed -- minimal   # um repo genérico
+pnpm seed -- gran      # HESEC + 3 repos placeholder (edite paths depois)
+```
 
 ## Stack
 
@@ -73,6 +103,6 @@ Ver [cursor/HOOKS.md](cursor/HOOKS.md).
 | `packages/core` | TypeORM + better-sqlite3 + Zod |
 | `apps/server` | Fastify (`127.0.0.1:8787`) |
 | `apps/web` | Vite · React · Tailwind · TanStack Query |
-| `apps/cli` | seed · ingest-commit · remind |
+| `apps/cli` | seed · ingest-commit · remind · jira |
 
 Plano: [questlog-PLAN.md](questlog-PLAN.md).

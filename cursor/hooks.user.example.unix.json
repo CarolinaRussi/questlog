@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "./hooks/questlog-remind.sh",
+        "timeout": 45
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "./hooks/questlog-ingest-commit.sh",
+        "matcher": "git\\s+commit",
+        "timeout": 60
+      }
+    ]
+  }
+}

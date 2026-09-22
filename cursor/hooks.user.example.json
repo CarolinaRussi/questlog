@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ./hooks/questlog-remind.ps1",
+        "timeout": 45
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "powershell -NoProfile -ExecutionPolicy Bypass -File ./hooks/questlog-ingest-commit.ps1",
+        "matcher": "git\\s+commit",
+        "timeout": 60
+      }
+    ]
+  }
+}

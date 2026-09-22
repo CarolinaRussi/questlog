@@ -3,68 +3,67 @@
 Instalação **user-level** em `~/.cursor/` (vale para todos os projetos).  
 Os hooks chamam o **CLI** (`core` direto) — a API HTTP não precisa estar no ar para o ingest.
 
+Exemplos prontos neste repo:
+
+| Arquivo | Uso |
+|---------|-----|
+| `cursor/hooks.user.example.json` | Windows (PowerShell) |
+| `cursor/hooks.user.example.unix.json` | macOS / Linux (bash) |
+| `cursor/hooks/questlog-*.ps1` | Scripts Windows |
+| `cursor/hooks/questlog-*.sh` | Scripts Unix |
+
 ## Pré-requisitos
 
-- Repo QuestLog clonado e `pnpm install` + `pnpm --filter @questlog/core build` ok
-- Perfil seedado (`pnpm seed -- gran`) com **paths reais** dos repos
-- No Windows, use caminhos absolutos nos hooks (evite depender do `cwd` do Cursor)
+- Node.js + [pnpm](https://pnpm.io)
+- Repo QuestLog clonado; `pnpm setup` ok
+- Perfil criado (`pnpm seed -- minimal` ou `gran`) com **paths reais** dos repos no Settings
+- Variável opcional `QUESTLOG_ROOT` = caminho absoluto do monorepo QuestLog  
+  (senão edite a linha `EDIT ME` / default nos scripts)
 
-Defina (opcional) no ambiente ou no início dos scripts:
+## Instalação rápida (Windows)
 
-- `QUESTLOG_ROOT` — pasta do monorepo QuestLog
-- `QUESTLOG_DATA_DIR` — se quiser DB fora do default do SO
-
-## 1. `sessionStart` → remind
-
-Crie/edite o hook de session start para rodar o remind.
-
-Exemplo de comando (ajuste o path):
-
-```bash
-pnpm --dir "C:/Users/SEU_USER/projetos pessoais/questlog" --filter @questlog/cli remind
-```
-
-PowerShell:
+No PowerShell, a partir da pasta do QuestLog:
 
 ```powershell
-pnpm --dir "C:\Users\SEU_USER\projetos pessoais\questlog" --filter @questlog/cli remind
+# 1) apontar o monorepo (persista no ambiente do usuário se quiser)
+$env:QUESTLOG_ROOT = (Resolve-Path .).Path
+[System.Environment]::SetEnvironmentVariable("QUESTLOG_ROOT", $env:QUESTLOG_ROOT, "User")
+
+# 2) copiar hooks
+$cursor = Join-Path $env:USERPROFILE ".cursor"
+New-Item -ItemType Directory -Force -Path (Join-Path $cursor "hooks") | Out-Null
+Copy-Item .\cursor\hooks.user.example.json (Join-Path $cursor "hooks.json") -Force
+Copy-Item .\cursor\hooks\questlog-*.ps1 (Join-Path $cursor "hooks\") -Force
 ```
 
-O remind:
+Reinicie o Cursor.
+
+## Instalação rápida (macOS / Linux)
+
+```bash
+mkdir -p ~/.cursor/hooks
+cp cursor/hooks.user.example.unix.json ~/.cursor/hooks.json
+cp cursor/hooks/questlog-*.sh ~/.cursor/hooks/
+chmod +x ~/.cursor/hooks/questlog-*.sh
+export QUESTLOG_ROOT="$(pwd)"   # adicione ao shell profile
+```
+
+Reinicie o Cursor.
+
+## O que cada hook faz
+
+### `sessionStart` → remind
 
 - lista ativas/pausadas
 - testa `http://127.0.0.1:8787/api/health`
-- se a API estiver down, pede para subir o server
+- se a API estiver down, pede para subir o server (`pnpm start`)
 
-## 2. `afterShellExecution` → ingest-commit
+### `afterShellExecution` → ingest-commit
 
-Quando um comando de shell terminar com sucesso e for um **`git commit`**:
+Quando o comando parece um **`git commit`** bem-sucedido:
 
-1. Use o `cwd` do comando (repo onde o commit aconteceu)
-2. Rode o ingest **nesse diretório**
-
-PowerShell (esqueleto):
-
-```powershell
-# Pseudocódigo — adapte aos campos que o seu hook expõe (command, cwd, exitCode)
-if ($exitCode -ne 0) { exit 0 }
-if ($command -notmatch 'git\s+commit') { exit 0 }
-
-Set-Location $cwd
-pnpm --dir "C:\Users\SEU_USER\projetos pessoais\questlog" --filter @questlog/cli ingest-commit
-exit 0
-```
-
-Bash:
-
-```bash
-# Pseudocódigo
-[ "$exit_code" -eq 0 ] || exit 0
-echo "$command" | grep -Eq 'git[[:space:]]+commit' || exit 0
-cd "$cwd" || exit 0
-pnpm --dir "$QUESTLOG_ROOT" --filter @questlog/cli ingest-commit
-exit 0
-```
+1. Usa o `cwd` do evento (repo do commit)
+2. Roda `pnpm --filter @questlog/cli ingest-commit` nesse diretório
 
 ### Fail-open
 
@@ -85,9 +84,9 @@ Se o cwd **não** for um repo do perfil, o CLI avisa e sai sem erro.
 
 ```bash
 pnpm --filter @questlog/cli remind
-cd /caminho/do/es-api
+cd /caminho/do/seu-repo
 # faça um commit de teste
-pnpm --dir /caminho/do/questlog --filter @questlog/cli ingest-commit -- --strict
+pnpm --dir "$QUESTLOG_ROOT" --filter @questlog/cli ingest-commit -- --strict
 ```
 
 Abra o board e veja a timeline da quest / Inbox.
@@ -96,4 +95,4 @@ Abra o board e veja a timeline da quest / Inbox.
 
 - Não coloque lógica QuestLog dentro dos repos da empresa — só hooks no `~/.cursor`
 - Não commite o `.db` nem paths reais sensíveis no GitHub público
-- Formato exato dos arquivos de hook do Cursor muda com a versão do produto; use esta página como **contrato de comportamento** e adapte ao schema atual do seu `~/.cursor/hooks.json` (ou equivalente)
+- Formato dos hooks do Cursor pode mudar; estes exemplos seguem `hooks.json` version 1
