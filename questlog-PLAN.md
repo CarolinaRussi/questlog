@@ -248,11 +248,21 @@ Critério de pronto da Fase 2 = **2.1–2.3** verdes; **2.4** só se valer a dor
 - UI de troca de perfil + N registros em `profiles`
 - Não bloqueia 2.1–2.3
 
-### Fase 3 — Ticket read-only (opcional)
+### Fase 3 — Ticket read-only (Jira)
 
-- API externa (Jira/etc.) só título/status das keys do perfil
-- Nunca espelhar descrição completa do card
-- Inclui “Refresh do Jira” para quests já importadas
+Só **título + status** das keys já ligadas a quests. Nunca espelhar descrição do card. Credenciais Jira só em **env local** (não no profile/SQLite).
+
+Entregar **uma fatia por vez**; review + commit antes da próxima.
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **3.1** | Migration + campos na quest: `ticket_status`, `ticket_synced_at` | `feat(core): add quest ticket sync columns` |
+| **3.2** | `core`: `applyTicketSnapshots` — casa key→quest, atualiza título/status label; Done→`feita`; não cria quests novas; não apaga `falta` | `feat(core): apply external ticket snapshots` |
+| **3.3** | Cliente REST Jira (summary+status) + CLI `refresh-jira` (env ou `--file`) | `feat(cli): refresh-jira from rest or file` |
+| **3.4** | `POST /api/tickets/refresh` (usa env; aplica snapshots) | `feat(server): expose ticket refresh endpoint` |
+| **3.5** | Web: badge de status externo + botão “Atualizar tickets” | `feat(web): show ticket status and refresh action` |
+
+Critério de pronto = **3.1–3.5** verdes. Sync contínuo / webhooks = fora.
 
 ### Fase 4 — App instalável
 
