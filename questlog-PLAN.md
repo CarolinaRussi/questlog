@@ -15,7 +15,7 @@
 | Concorrência | WAL + transações curtas **só** no `core` |
 | Dados | Diretório do usuário (`getDataDir()`); `QUESTLOG_DATA_DIR` opcional; **nunca** commitar `.db` |
 | Match de commit | ticket → branch → quest ativa → Inbox |
-| Desktop | Fase futura; Electron vs Tauri **adiado**; shell reusa `core` + API |
+| Desktop | **Electron** (fase 4); shell reusa `core` + API + mesmo `getDataDir()`; Tauri / auto-update / code signing = depois |
 | Monorepo | pnpm workspaces: `packages/core`, `apps/server`, `apps/web`, `apps/cli` |
 | Lembrete | `sessionStart` sempre; texto muda se API estiver down |
 
@@ -31,7 +31,7 @@ QuestLog é um **quadro pessoal de trabalho em andamento**: a unidade de verdade
 - **Outras pessoas** configuram paths dos repos, regex de ticket, URL base, se há epic — sem fork do produto.
 - **Portfólio**: app local full-stack real (API + SQLite + React), sem vazar dados de empresa.
 
-Instalável (Electron/Tauri) é fase posterior: mesmo `core`, mesma API, outro invólucro.
+Instalável = Electron (fase 4): mesmo `core`, mesma API, outro invólucro. Tauri / auto-update / signing = depois.
 
 ---
 
@@ -314,11 +314,21 @@ Decisões travadas:
 
 Critério de pronto = **6.1–6.6** verdes.
 
-### Fase 4 — App instalável
+### Fase 4 — App instalável (Electron)
 
-- Shell desktop reusando `core` + API local
-- Escolher Electron vs Tauri na hora (critério: peso vs pack)
-- Mesmo `getDataDir()` / SQLite
+Decisões travadas:
+1. **Electron** (não Tauri nesta fase) — Node sidecar evita rebuild de `better-sqlite3` no ABI do Electron
+2. Mesmo `getDataDir()` / SQLite; API em `127.0.0.1`; UI = build do `apps/web` servido pelo Fastify
+3. Hooks/CLI **fora** do shell (continuam user-level Cursor)
+4. **Fora desta fase:** auto-update, code signing, Tauri, tray avançado
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **4.1** | Server serve `web/dist` (`QUESTLOG_WEB_DIST`) + `apps/desktop` (Electron, Node filho) + `pnpm desktop` | `feat(desktop): electron shell with local api` |
+| **4.2** | Pack Windows unsigned (`electron-builder`) — inclui o necessário pra abrir sem terminal; **sem** auto-update/signing | `chore(desktop): windows unsigned pack` |
+| **4.3** | README: app vs `pnpm start`; limites claros | `docs: desktop app daily open` |
+
+Critério de pronto = **4.1–4.3** verdes. Auto-update / code signing / Tauri = fora.
 
 ---
 
@@ -341,7 +351,8 @@ Critério de pronto = **6.1–6.6** verdes.
 - Docker obrigatório para usar o app
 - Hardcode HESEC / repos Gran no `core`
 - Código do QuestLog dentro dos repos de produto da empresa
-- Escolher Electron vs Tauri no MVP
+- Auto-update / code signing do desktop (depois da fase 4)
+- Tauri (Electron travado na fase 4)
 
 ---
 

@@ -549,7 +549,6 @@ function ArchiveQuestRow({
 }
 
 function ArchiveQuestActions({
-  quest,
   busy,
   commits,
   onWatch,

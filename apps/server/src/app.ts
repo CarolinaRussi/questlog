@@ -10,6 +10,7 @@ import { registerProfileRoutes } from "./routes/profile.routes.js";
 import { registerQuestRoutes } from "./routes/quests.routes.js";
 import { registerSecretsRoutes } from "./routes/secrets.routes.js";
 import { registerTicketRoutes } from "./routes/tickets.routes.js";
+import { registerStaticWeb } from "./static-web.js";
 
 export async function buildApp() {
   const app = Fastify({ logger: true });
@@ -29,6 +30,7 @@ export async function buildApp() {
   await registerCommitRoutes(app);
   await registerTicketRoutes(app);
   await registerEpicRoutes(app);
+  await registerStaticWeb(app);
 
   return app;
 }

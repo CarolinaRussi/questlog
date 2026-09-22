@@ -6,11 +6,12 @@
   "scripts": {
     "setup": "pnpm install && pnpm --filter @questlog/core build",
     "start": "pnpm --filter @questlog/core build && pnpm --parallel --filter @questlog/server --filter @questlog/web start",
+    "desktop": "pnpm --filter @questlog/core build && pnpm --filter @questlog/web build && pnpm --filter @questlog/desktop start",
     "dev": "pnpm --filter @questlog/core build && pnpm -r --parallel --filter @questlog/core --filter @questlog/server --filter @questlog/web --filter @questlog/cli dev",
     "dev:web": "pnpm --filter @questlog/web dev",
     "dev:server": "pnpm --filter @questlog/server dev",
     "build": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web build",
-    "typecheck": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web typecheck",
+    "typecheck": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web --filter @questlog/desktop typecheck",
     "seed": "pnpm --filter @questlog/core build && pnpm --filter @questlog/cli seed",
     "import-jira": "pnpm --filter @questlog/core build && pnpm --filter @questlog/cli import-jira",
     "remind": "pnpm --filter @questlog/cli remind"
@@ -19,6 +20,6 @@
     "typescript": "^5.9.2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "better-sqlite3"]
+    "onlyBuiltDependencies": ["esbuild", "better-sqlite3", "electron"]
   }
 }
