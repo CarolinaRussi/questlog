@@ -1,15 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   activateQuest,
   completeQuest,
   createQuest,
+  fetchBoardHome,
   fetchCommits,
-  fetchQuests,
   pauseQuest,
+  promoteQuest,
   refreshTickets,
   resumeQuest,
-  ticketHref,
   type Profile,
   type Quest,
   type QuestStatus,
@@ -20,23 +20,32 @@ import { PauseQuestPanel } from "./PauseQuestPanel";
 type QuestBoardProps = {
   profile: Profile;
   onOpenSettings: () => void;
+  onOpenArchive?: () => void;
 };
 
-export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
-  const queryClient = useQueryClient();
-  const [selectedEpicId, setSelectedEpicId] = useState<string | null>(null);
-  const [selectedQuestId, setSelectedQuestId] = useState<string | null>(null);
-  const [showFeitas, setShowFeitas] = useState(false);
-  const [newTitulo, setNewTitulo] = useState("");
-  const [newTickets, setNewTickets] = useState("");
-  const [newEpicId, setNewEpicId] = useState("");
-  const [pausingQuestId, setPausingQuestId] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formNotice, setFormNotice] = useState<string | null>(null);
+type Surface =
+  | { kind: "idle" }
+  | { kind: "create" }
+  | { kind: "pause"; quest: Quest }
+  | { kind: "epic"; epicId: string; questId: string | null }
+  | { kind: "promote-pause"; quest: Quest };
 
-  const questsQuery = useQuery({
-    queryKey: ["quests"],
-    queryFn: fetchQuests,
+export function QuestBoard({
+  profile,
+  onOpenSettings,
+  onOpenArchive,
+}: QuestBoardProps) {
+  const queryClient = useQueryClient();
+  const [surface, setSurface] = useState<Surface>({ kind: "idle" });
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [errorFeedback, setErrorFeedback] = useState<string | null>(null);
+  const [createTitle, setCreateTitle] = useState("");
+  const [createTickets, setCreateTickets] = useState("");
+  const [createEpicId, setCreateEpicId] = useState("");
+
+  const homeQuery = useQuery({
+    queryKey: ["board-home"],
+    queryFn: fetchBoardHome,
   });
 
   const inboxQuery = useQuery({
@@ -44,45 +53,38 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
     queryFn: () => fetchCommits({ inbox: true }),
   });
 
-  const selectedQuest =
-    questsQuery.data?.find((quest) => quest.id === selectedQuestId) ?? null;
-
-  const commitsQuery = useQuery({
-    queryKey: ["commits", selectedQuestId],
-    queryFn: () => fetchCommits({ questId: selectedQuestId! }),
-    enabled: Boolean(selectedQuestId),
-  });
-
-  function invalidateBoard() {
-    void queryClient.invalidateQueries({ queryKey: ["quests"] });
+  const invalidateBoard = () => {
+    void queryClient.invalidateQueries({ queryKey: ["board-home"] });
+    void queryClient.invalidateQueries({ queryKey: ["board-revision"] });
     void queryClient.invalidateQueries({ queryKey: ["commits"] });
     void queryClient.invalidateQueries({ queryKey: ["profile"] });
     void queryClient.invalidateQueries({ queryKey: ["epic-notes"] });
-  }
+  };
 
   const createMutation = useMutation({
     mutationFn: () =>
       createQuest({
-        titulo: newTitulo.trim(),
-        ticketIds: newTickets
-          .split(",")
+        titulo: createTitle.trim(),
+        ticketIds: createTickets
+          .split(/[\s,]+/)
           .map((ticket) => ticket.trim())
           .filter(Boolean),
-        epicId: profile.ticketHasEpic ? newEpicId.trim() || null : null,
+        epicId: profile.ticketHasEpic ? createEpicId.trim() || null : null,
         setActive: true,
       }),
-    onSuccess: (quest) => {
-      setNewTitulo("");
-      setNewTickets("");
-      setNewEpicId("");
-      setFormError(null);
-      setSelectedQuestId(quest.id);
-      setSelectedEpicId(quest.epicId);
-      setPausingQuestId(null);
+    onSuccess: () => {
+      setCreateTitle("");
+      setCreateTickets("");
+      setCreateEpicId("");
+      setSurface({ kind: "idle" });
+      setErrorFeedback(null);
+      setFeedback("Quest criada.");
       invalidateBoard();
     },
     onError: (error) => {
-      setFormError(error instanceof Error ? error.message : "Erro ao criar");
+      setErrorFeedback(
+        error instanceof Error ? error.message : "Erro ao criar",
+      );
     },
   });
 
@@ -90,12 +92,15 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
     mutationFn: ({ questId, falta }: { questId: string; falta: string }) =>
       pauseQuest(questId, falta),
     onSuccess: () => {
-      setPausingQuestId(null);
-      setFormError(null);
+      setSurface({ kind: "idle" });
+      setErrorFeedback(null);
+      setFeedback("Quest pausada.");
       invalidateBoard();
     },
     onError: (error) => {
-      setFormError(error instanceof Error ? error.message : "Erro ao pausar");
+      setErrorFeedback(
+        error instanceof Error ? error.message : "Erro ao pausar",
+      );
     },
   });
 
@@ -111,20 +116,56 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
       if (action === "complete") return completeQuest(questId);
       return activateQuest(questId);
     },
-    onSuccess: () => {
-      setFormError(null);
+    onSuccess: (_quest, variables) => {
+      setErrorFeedback(null);
+      setFeedback(
+        variables.action === "complete"
+          ? "Quest marcada como feita."
+          : "Quest retomada.",
+      );
       invalidateBoard();
     },
     onError: (error) => {
-      setFormError(error instanceof Error ? error.message : "Erro na ação");
+      setErrorFeedback(
+        error instanceof Error ? error.message : "Erro na ação",
+      );
+    },
+  });
+
+  const promoteMutation = useMutation({
+    mutationFn: ({
+      questId,
+      mode,
+      falta,
+    }: {
+      questId: string;
+      mode: "watch" | "resume" | "pause";
+      falta?: string;
+    }) => promoteQuest(questId, { mode, falta }),
+    onSuccess: (_quest, variables) => {
+      setSurface({ kind: "idle" });
+      setErrorFeedback(null);
+      setFeedback(
+        variables.mode === "watch"
+          ? "Acompanhando no board."
+          : variables.mode === "resume"
+            ? "Quest retomada."
+            : "Quest pausada e no board.",
+      );
+      invalidateBoard();
+    },
+    onError: (error) => {
+      setErrorFeedback(
+        error instanceof Error ? error.message : "Erro ao promover",
+      );
     },
   });
 
   const refreshMutation = useMutation({
     mutationFn: refreshTickets,
     onSuccess: (result) => {
-      setFormError(null);
-      setFormNotice(
+      setErrorFeedback(null);
+      setFeedback(
         result.fetched === 0
           ? "Nenhuma ticket para atualizar."
           : `Tickets atualizados: ${result.updated}` +
@@ -138,573 +179,738 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
       invalidateBoard();
     },
     onError: (error) => {
-      setFormNotice(null);
-      setFormError(
+      setFeedback(null);
+      setErrorFeedback(
         error instanceof Error ? error.message : "Erro ao atualizar tickets",
       );
     },
   });
 
-  const ativas =
-    questsQuery.data?.filter((quest) => quest.status === "ativa") ?? [];
-  const pausadas =
-    questsQuery.data?.filter((quest) => quest.status === "pausada") ?? [];
-  const feitas =
-    questsQuery.data?.filter((quest) => quest.status === "feita") ?? [];
-  const openQuests = [...ativas, ...pausadas];
-  const useEpicBoard = profile.ticketHasEpic;
-  const epicCards = useEpicBoard ? groupQuestsByEpic(openQuests) : null;
+  const home = homeQuery.data;
+  const selectedQuest =
+    surface.kind === "epic" && surface.questId
+      ? findQuest(home, surface.questId)
+      : null;
 
-  const selectedEpicQuests =
-    useEpicBoard && selectedEpicId
-      ? (questsQuery.data ?? []).filter(
-          (quest) =>
-            quest.epicId != null &&
-            quest.epicId.toUpperCase() === selectedEpicId.toUpperCase(),
-        )
-      : [];
+  const commitsQuery = useQuery({
+    queryKey: ["commits", selectedQuest?.id],
+    queryFn: () => fetchCommits({ questId: selectedQuest!.id }),
+    enabled: Boolean(selectedQuest),
+  });
 
-  function selectEpic(epicId: string | null) {
-    setSelectedEpicId(epicId);
-    setSelectedQuestId(null);
-    setPausingQuestId(null);
+  if (homeQuery.isLoading) {
+    return (
+      <div className="space-y-3">
+        <div className="h-8 w-48 animate-pulse rounded bg-stone-200" />
+        <div className="h-28 animate-pulse rounded-2xl bg-stone-200" />
+        <div className="h-28 animate-pulse rounded-2xl bg-stone-200" />
+      </div>
+    );
   }
 
-  function selectQuest(questId: string) {
-    setSelectedQuestId(questId);
-    setPausingQuestId(null);
-    const quest = questsQuery.data?.find((item) => item.id === questId);
-    if (quest?.epicId) {
-      setSelectedEpicId(quest.epicId);
-    }
+  if (homeQuery.isError || !home) {
+    return (
+      <p className="text-red-800">
+        {homeQuery.error instanceof Error
+          ? homeQuery.error.message
+          : "Erro ao carregar board"}
+      </p>
+    );
   }
 
-  const questActionBlock = selectedQuest ? (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {selectedQuest.ticketIds.map((ticketId) => {
-          const href = ticketHref(profile.ticketBaseUrl, ticketId);
-          return href ? (
-            <a
-              key={ticketId}
-              href={href}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-full border px-2.5 py-1 text-sm"
-              style={{ borderColor: "var(--ql-border)" }}
-            >
-              {profile.ticketPrefixLabel} {ticketId}
-            </a>
-          ) : (
-            <span
-              key={ticketId}
-              className="rounded-full border px-2.5 py-1 text-sm"
-              style={{ borderColor: "var(--ql-border)" }}
-            >
-              {ticketId}
-            </span>
-          );
-        })}
-      </div>
-
-      {selectedQuest.status === "pausada" || selectedQuest.falta ? (
-        <div
-          className="rounded-xl px-3 py-3"
-          style={{ background: "#f0fdf4" }}
-        >
-          <p className="text-xs font-semibold uppercase tracking-wide">Falta</p>
-          <p className="mt-1 text-base font-medium">
-            {selectedQuest.falta || "—"}
-          </p>
-        </div>
-      ) : null}
-
-      {pausingQuestId === selectedQuest.id ? (
-        <PauseQuestPanel
-          questTitulo={selectedQuest.titulo}
-          isPending={pauseMutation.isPending}
-          onCancel={() => setPausingQuestId(null)}
-          onConfirm={(falta) =>
-            pauseMutation.mutate({
-              questId: selectedQuest.id,
-              falta,
-            })
-          }
-        />
-      ) : null}
-
-      {selectedQuest.status === "ativa" &&
-      pausingQuestId !== selectedQuest.id ? (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
-            style={{ background: "var(--ql-accent)" }}
-            onClick={() => setPausingQuestId(selectedQuest.id)}
-          >
-            Pausar…
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border px-3 py-2 text-sm font-semibold"
-            style={{ borderColor: "var(--ql-border)" }}
-            disabled={actionMutation.isPending}
-            onClick={() =>
-              actionMutation.mutate({
-                questId: selectedQuest.id,
-                action: "activate",
-              })
-            }
-          >
-            Definir ativa
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border px-3 py-2 text-sm font-semibold"
-            style={{ borderColor: "var(--ql-border)" }}
-            disabled={actionMutation.isPending}
-            onClick={() =>
-              actionMutation.mutate({
-                questId: selectedQuest.id,
-                action: "complete",
-              })
-            }
-          >
-            Marcar feita
-          </button>
-        </div>
-      ) : null}
-
-      {selectedQuest.status === "pausada" ? (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-xl px-3 py-2 text-sm font-semibold text-white"
-            style={{ background: "var(--ql-accent)" }}
-            disabled={actionMutation.isPending}
-            onClick={() =>
-              actionMutation.mutate({
-                questId: selectedQuest.id,
-                action: "resume",
-              })
-            }
-          >
-            Retomar
-          </button>
-          <button
-            type="button"
-            className="rounded-xl border px-3 py-2 text-sm font-semibold"
-            style={{ borderColor: "var(--ql-border)" }}
-            disabled={actionMutation.isPending}
-            onClick={() =>
-              actionMutation.mutate({
-                questId: selectedQuest.id,
-                action: "complete",
-              })
-            }
-          >
-            Marcar feita
-          </button>
-        </div>
-      ) : null}
-
-      <div className="space-y-2">
-        <h4 className="text-sm font-semibold uppercase tracking-wide">
-          Commits desta tarefa
-        </h4>
-        {commitsQuery.isLoading ? (
-          <p style={{ color: "var(--ql-muted)" }}>Carregando…</p>
-        ) : null}
-        {(commitsQuery.data ?? []).map((commit) => (
-          <div
-            key={commit.id}
-            className="rounded-lg border px-3 py-2 text-sm"
-            style={{ borderColor: "var(--ql-border)" }}
-          >
-            <p className="font-medium">{commit.assunto}</p>
-            <p style={{ color: "var(--ql-muted)" }}>
-              {commit.repo} · {commit.hash.slice(0, 7)}
-            </p>
-          </div>
-        ))}
-        {commitsQuery.data?.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-            Nenhum commit nesta quest ainda.
-          </p>
-        ) : null}
-      </div>
-    </div>
-  ) : null;
+  const isEmpty =
+    home.epics.length === 0 &&
+    home.ungrouped.length === 0 &&
+    home.suggestions.length === 0;
 
   return (
     <div className="space-y-6">
-      <section className="panel space-y-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h2
-              className="text-2xl font-bold"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Board
-            </h2>
-            <p style={{ color: "var(--ql-muted)" }}>
-              Perfil <strong>{profile.name}</strong>
-              {profile.commitHint ? ` · ${profile.commitHint}` : null}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-60"
-              style={{ borderColor: "var(--ql-border)" }}
-              disabled={refreshMutation.isPending}
-              onClick={() => refreshMutation.mutate()}
-            >
-              {refreshMutation.isPending
-                ? "Atualizando…"
-                : "Atualizar tickets"}
-            </button>
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2
+            className="text-2xl font-bold tracking-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Agora
+          </h2>
+          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+            Só o que você está acompanhando.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {onOpenArchive ? (
             <button
               type="button"
               className="rounded-xl border px-3 py-2 text-sm font-semibold"
               style={{ borderColor: "var(--ql-border)" }}
-              onClick={onOpenSettings}
+              onClick={onOpenArchive}
             >
-              Settings
+              Arquivo
             </button>
-          </div>
-        </div>
-
-        <form
-          className={`grid gap-2 ${
-            profile.ticketHasEpic
-              ? "sm:grid-cols-[1fr_1fr_1fr_auto]"
-              : "sm:grid-cols-[1fr_1fr_auto]"
-          }`}
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!newTitulo.trim()) return;
-            createMutation.mutate();
-          }}
-        >
-          <input
-            className="field"
-            placeholder="Nova quest"
-            value={newTitulo}
-            onChange={(event) => setNewTitulo(event.target.value)}
-            required
-          />
-          <input
-            className="field"
-            placeholder="Tickets (HESEC-1, HESEC-2)"
-            value={newTickets}
-            onChange={(event) => setNewTickets(event.target.value)}
-          />
-          {profile.ticketHasEpic ? (
-            <input
-              className="field"
-              placeholder="Épico (HESEC-100)"
-              value={newEpicId}
-              onChange={(event) => setNewEpicId(event.target.value)}
-            />
           ) : null}
           <button
-            type="submit"
-            disabled={createMutation.isPending}
-            className="rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            style={{ background: "var(--ql-accent)" }}
+            type="button"
+            className="rounded-xl border px-3 py-2 text-sm font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            onClick={onOpenSettings}
           >
-            {createMutation.isPending ? "Criando…" : "Criar"}
+            Settings
           </button>
-        </form>
-      </section>
+          <button
+            type="button"
+            className="rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-60"
+            style={{ borderColor: "var(--ql-border)" }}
+            disabled={refreshMutation.isPending}
+            onClick={() => refreshMutation.mutate()}
+          >
+            {refreshMutation.isPending ? "Atualizando…" : "Status Jira"}
+          </button>
+          <button
+            type="button"
+            className="rounded-xl border px-3 py-2 text-sm font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            onClick={() => setSurface({ kind: "create" })}
+          >
+            Nova quest
+          </button>
+        </div>
+      </header>
 
-      {questsQuery.isLoading ? (
-        <section className="panel animate-pulse space-y-3">
-          <div className="h-5 w-32 rounded bg-stone-200" />
-          <div className="h-16 rounded bg-stone-200" />
-        </section>
-      ) : null}
-
-      {questsQuery.isError ? (
-        <section className="panel text-red-800">
-          {questsQuery.error instanceof Error
-            ? questsQuery.error.message
-            : "Erro ao carregar quests"}
-        </section>
-      ) : null}
-
-      {questsQuery.data ? (
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="space-y-4">
-            {epicCards ? (
-              <>
-                <section className="panel space-y-2">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide">
-                    Épicos
-                  </h3>
-                  {epicCards
-                    .filter((group) => group.epicId !== null)
-                    .map((group) => {
-                      const epicId = group.epicId!;
-                      const selected =
-                        selectedEpicId?.toUpperCase() ===
-                        epicId.toUpperCase();
-                      const ativaCount = group.quests.filter(
-                        (quest) => quest.status === "ativa",
-                      ).length;
-                      const pausadaCount = group.quests.filter(
-                        (quest) => quest.status === "pausada",
-                      ).length;
-                      return (
-                        <button
-                          key={epicId}
-                          type="button"
-                          onClick={() => selectEpic(epicId)}
-                          className="w-full rounded-xl border px-3 py-3 text-left transition"
-                          style={{
-                            borderColor: selected
-                              ? "var(--ql-accent)"
-                              : "var(--ql-border)",
-                            background: selected ? "#f0fdfa" : "#fff",
-                          }}
-                        >
-                          <p className="font-semibold">{epicId}</p>
-                          <p
-                            className="text-sm"
-                            style={{ color: "var(--ql-muted)" }}
-                          >
-                            {group.quests.length} aberta
-                            {group.quests.length === 1 ? "" : "s"}
-                            {ativaCount > 0 ? ` · ${ativaCount} ativa` : ""}
-                            {pausadaCount > 0
-                              ? ` · ${pausadaCount} pausada`
-                              : ""}
-                          </p>
-                        </button>
-                      );
-                    })}
-                </section>
-                {epicCards.some((group) => group.epicId === null) ? (
-                  <QuestGroup
-                    title="Sem épico"
-                    quests={
-                      epicCards.find((group) => group.epicId === null)
-                        ?.quests ?? []
-                    }
-                    selectedQuestId={selectedQuestId}
-                    activeQuestId={profile.activeQuestId}
-                    onSelect={(questId) => {
-                      setSelectedEpicId(null);
-                      selectQuest(questId);
-                    }}
-                  />
-                ) : null}
-              </>
-            ) : (
-              <>
-                <QuestGroup
-                  title="Ativas"
-                  quests={ativas}
-                  selectedQuestId={selectedQuestId}
-                  activeQuestId={profile.activeQuestId}
-                  onSelect={selectQuest}
-                />
-                <QuestGroup
-                  title="Pausadas"
-                  quests={pausadas}
-                  selectedQuestId={selectedQuestId}
-                  activeQuestId={profile.activeQuestId}
-                  onSelect={selectQuest}
-                />
-              </>
-            )}
-
-            <section className="panel space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold uppercase tracking-wide">
-                  Inbox
-                </h3>
-                <span className="text-sm" style={{ color: "var(--ql-muted)" }}>
-                  {inboxQuery.data?.length ?? 0}
-                </span>
-              </div>
-              {(inboxQuery.data ?? []).slice(0, 5).map((commit) => (
-                <p key={commit.id} className="text-sm">
-                  <span className="font-medium">{commit.repo}</span> ·{" "}
-                  {commit.assunto}
-                </p>
-              ))}
-              {inboxQuery.data?.length === 0 ? (
-                <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-                  Sem commits sem quest.
-                </p>
-              ) : null}
-            </section>
-
-            <div>
-              <button
-                type="button"
-                className="text-sm font-semibold"
-                style={{ color: "var(--ql-accent)" }}
-                onClick={() => setShowFeitas((current) => !current)}
-              >
-                {showFeitas
-                  ? "Ocultar feitas"
-                  : `Ver feitas (${feitas.length})`}
-              </button>
-              {showFeitas ? (
-                <div className="mt-3">
-                  <QuestGroup
-                    title="Feitas"
-                    quests={feitas}
-                    selectedQuestId={selectedQuestId}
-                    activeQuestId={profile.activeQuestId}
-                    onSelect={(questId) => {
-                      const quest = feitas.find((item) => item.id === questId);
-                      if (quest?.epicId) {
-                        selectEpic(quest.epicId);
-                        setSelectedQuestId(questId);
-                      } else {
-                        setSelectedEpicId(null);
-                        selectQuest(questId);
-                      }
-                    }}
-                  />
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          <section className="panel space-y-4">
-            {useEpicBoard && selectedEpicId ? (
-              <EpicDetailPanel
-                epicId={selectedEpicId}
-                quests={selectedEpicQuests}
-                profile={profile}
-                selectedQuestId={selectedQuestId}
-                onSelectQuest={selectQuest}
-                questActions={questActionBlock}
-              />
-            ) : !selectedQuest ? (
-              <p style={{ color: "var(--ql-muted)" }}>
-                {useEpicBoard
-                  ? "Selecione um épico para ver as tarefas e o resumo."
-                  : "Selecione uma quest para ver detalhe, falta e commits."}
-              </p>
-            ) : (
-              <>
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide">
-                    {statusLabel(selectedQuest.status)}
-                    {profile.activeQuestId === selectedQuest.id
-                      ? " · ativa no ingest"
-                      : ""}
-                  </p>
-                  <h3
-                    className="text-2xl font-bold"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {selectedQuest.titulo}
-                  </h3>
-                </div>
-                {questActionBlock}
-              </>
-            )}
-          </section>
+      {feedback ? (
+        <div
+          className="rounded-xl border px-3 py-2 text-sm"
+          style={{ borderColor: "var(--ql-border)", background: "#f0fdf4" }}
+        >
+          {feedback}
         </div>
       ) : null}
 
-      {formNotice ? (
-        <p
-          className="rounded-lg px-3 py-2 text-sm"
-          style={{ background: "#f0fdf4", color: "#166534" }}
+      {errorFeedback ? (
+        <div
+          className="rounded-xl border px-3 py-2 text-sm text-red-800"
+          style={{ borderColor: "#fecaca", background: "#fef2f2" }}
         >
-          {formNotice}
-        </p>
+          {errorFeedback}
+        </div>
       ) : null}
 
-      {formError ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
-          {formError}
-        </p>
+      {(inboxQuery.data?.length ?? 0) > 0 ? (
+        <section
+          className="rounded-2xl border px-4 py-3"
+          style={{ borderColor: "#fde68a", background: "#fffbeb" }}
+        >
+          <p className="text-sm font-semibold">
+            Inbox — {inboxQuery.data!.length} commit(s) sem quest
+          </p>
+          <ul
+            className="mt-2 space-y-1 text-sm"
+            style={{ color: "var(--ql-muted)" }}
+          >
+            {inboxQuery.data!.slice(0, 5).map((commit) => (
+              <li key={commit.id}>
+                {commit.assunto.slice(0, 80)}
+                {commit.assunto.length > 80 ? "…" : ""}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {isEmpty ? (
+        <EmptyHome
+          onCreate={() => setSurface({ kind: "create" })}
+          onOpenArchive={onOpenArchive}
+        />
+      ) : null}
+
+      {home.epics.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Épicos em acompanhamento
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {home.epics.map((card) => {
+              const open =
+                surface.kind === "epic" && surface.epicId === card.epicId;
+              const faltaLine = card.nextFalta?.falta.trim() ?? "";
+              return (
+                <button
+                  key={card.epicId}
+                  type="button"
+                  onClick={() =>
+                    setSurface({
+                      kind: "epic",
+                      epicId: card.epicId,
+                      questId:
+                        card.nextFalta?.questId ?? card.quests[0]?.id ?? null,
+                    })
+                  }
+                  className="rounded-2xl border px-4 py-4 text-left transition hover:border-teal-600"
+                  style={{
+                    borderColor: open ? "var(--ql-accent)" : "var(--ql-border)",
+                    background: open ? "#f0fdfa" : "var(--ql-surface)",
+                  }}
+                >
+                  <p
+                    className="text-lg font-bold"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {card.epicId}
+                  </p>
+                  <p
+                    className="mt-1 text-sm"
+                    style={{ color: "var(--ql-muted)" }}
+                  >
+                    {card.openCount} tarefa(s)
+                  </p>
+                  {faltaLine ? (
+                    <p className="mt-3 text-sm leading-snug">
+                      <span className="font-semibold">Falta: </span>
+                      {faltaLine}
+                    </p>
+                  ) : (
+                    <p
+                      className="mt-3 text-sm"
+                      style={{ color: "var(--ql-muted)" }}
+                    >
+                      Sem falta registrada ainda
+                    </p>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      {home.ungrouped.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Sem épico
+          </h3>
+          <div className="space-y-2">
+            {home.ungrouped.map((quest) => (
+              <QuestRow
+                key={quest.id}
+                quest={quest}
+                active={profile.activeQuestId === quest.id}
+                busy={actionMutation.isPending || pauseMutation.isPending}
+                onPause={() => setSurface({ kind: "pause", quest })}
+                onResume={() =>
+                  actionMutation.mutate({
+                    questId: quest.id,
+                    action:
+                      quest.status === "pausada" ? "resume" : "activate",
+                  })
+                }
+                onFinish={() =>
+                  actionMutation.mutate({
+                    questId: quest.id,
+                    action: "complete",
+                  })
+                }
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {home.suggestions.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Sugestões
+          </h3>
+          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+            No arquivo, mas ainda não acompanhadas. Traga para o agora.
+          </p>
+          <div className="space-y-2">
+            {home.suggestions.map((quest) => (
+              <SuggestionRow
+                key={quest.id}
+                quest={quest}
+                busy={promoteMutation.isPending}
+                onWatch={() =>
+                  promoteMutation.mutate({
+                    questId: quest.id,
+                    mode: "watch",
+                  })
+                }
+                onResume={() =>
+                  promoteMutation.mutate({
+                    questId: quest.id,
+                    mode: "resume",
+                  })
+                }
+                onPause={() =>
+                  setSurface({ kind: "promote-pause", quest })
+                }
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {surface.kind === "create" ? (
+        <Sheet onClose={() => setSurface({ kind: "idle" })} title="Nova quest">
+          <form
+            className="space-y-3"
+            onSubmit={(event) => {
+              event.preventDefault();
+              createMutation.mutate();
+            }}
+          >
+            <label className="block space-y-1 text-sm">
+              <span className="font-medium">Título</span>
+              <input
+                className="w-full rounded-xl border px-3 py-2"
+                style={{ borderColor: "var(--ql-border)" }}
+                value={createTitle}
+                onChange={(event) => setCreateTitle(event.target.value)}
+                required
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
+              <span className="font-medium">Tickets (opcional)</span>
+              <input
+                className="w-full rounded-xl border px-3 py-2"
+                style={{ borderColor: "var(--ql-border)" }}
+                value={createTickets}
+                onChange={(event) => setCreateTickets(event.target.value)}
+                placeholder={profile.ticketPrefixLabel || "TICKET-123"}
+              />
+            </label>
+            {profile.ticketHasEpic ? (
+              <label className="block space-y-1 text-sm">
+                <span className="font-medium">Épico (opcional)</span>
+                <input
+                  className="w-full rounded-xl border px-3 py-2"
+                  style={{ borderColor: "var(--ql-border)" }}
+                  value={createEpicId}
+                  onChange={(event) => setCreateEpicId(event.target.value)}
+                />
+              </label>
+            ) : null}
+            <button
+              type="submit"
+              className="rounded-xl px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              style={{ background: "var(--ql-accent)" }}
+              disabled={createMutation.isPending}
+            >
+              {createMutation.isPending ? "Criando…" : "Criar"}
+            </button>
+          </form>
+        </Sheet>
+      ) : null}
+
+      {surface.kind === "pause" ? (
+        <Sheet
+          onClose={() => setSurface({ kind: "idle" })}
+          title={`Pausar — ${surface.quest.titulo}`}
+        >
+          <PauseQuestPanel
+            questTitulo={surface.quest.titulo}
+            isPending={pauseMutation.isPending}
+            onCancel={() => setSurface({ kind: "idle" })}
+            onConfirm={(falta) =>
+              pauseMutation.mutate({ questId: surface.quest.id, falta })
+            }
+          />
+        </Sheet>
+      ) : null}
+
+      {surface.kind === "promote-pause" ? (
+        <Sheet
+          onClose={() => setSurface({ kind: "idle" })}
+          title={`Pausar + acompanhar — ${surface.quest.titulo}`}
+        >
+          <PauseQuestPanel
+            questTitulo={surface.quest.titulo}
+            isPending={promoteMutation.isPending}
+            onCancel={() => setSurface({ kind: "idle" })}
+            onConfirm={(falta) =>
+              promoteMutation.mutate({
+                questId: surface.quest.id,
+                mode: "pause",
+                falta,
+              })
+            }
+          />
+        </Sheet>
+      ) : null}
+
+      {surface.kind === "epic" ? (
+        <Sheet
+          onClose={() => setSurface({ kind: "idle" })}
+          title="Detalhe do épico"
+          wide
+        >
+          <EpicDetailPanel
+            epicId={surface.epicId}
+            quests={
+              home.epics.find((card) => card.epicId === surface.epicId)
+                ?.quests ?? []
+            }
+            profile={profile}
+            selectedQuestId={surface.questId}
+            onSelectQuest={(questId) =>
+              setSurface({ kind: "epic", epicId: surface.epicId, questId })
+            }
+            questActions={
+              selectedQuest ? (
+                <QuestActionsBlock
+                  quest={selectedQuest}
+                  busy={actionMutation.isPending}
+                  commits={commitsQuery.data ?? []}
+                  onPause={() =>
+                    setSurface({ kind: "pause", quest: selectedQuest })
+                  }
+                  onResume={() =>
+                    actionMutation.mutate({
+                      questId: selectedQuest.id,
+                      action:
+                        selectedQuest.status === "pausada"
+                          ? "resume"
+                          : "activate",
+                    })
+                  }
+                  onFinish={() =>
+                    actionMutation.mutate({
+                      questId: selectedQuest.id,
+                      action: "complete",
+                    })
+                  }
+                />
+              ) : null
+            }
+          />
+        </Sheet>
       ) : null}
     </div>
   );
 }
 
-function groupQuestsByEpic(
-  quests: Quest[],
-): Array<{ epicId: string | null; quests: Quest[] }> {
-  const map = new Map<string, Quest[]>();
-  for (const quest of quests) {
-    const key = quest.epicId?.trim().toUpperCase() || "";
-    const list = map.get(key) ?? [];
-    list.push(quest);
-    map.set(key, list);
-  }
-
-  const groups = [...map.entries()].map(([key, groupQuests]) => ({
-    epicId: key.length > 0 ? key : null,
-    quests: groupQuests,
-  }));
-
-  groups.sort((left, right) => {
-    if (left.epicId === null) return 1;
-    if (right.epicId === null) return -1;
-    return left.epicId.localeCompare(right.epicId);
-  });
-
-  return groups;
-}
-
-function QuestGroup({
-  title,
-  quests,
-  selectedQuestId,
-  activeQuestId,
-  onSelect,
+function EmptyHome({
+  onCreate,
+  onOpenArchive,
 }: {
-  title: string;
-  quests: Quest[];
-  selectedQuestId: string | null;
-  activeQuestId: string | null;
-  onSelect: (questId: string) => void;
+  onCreate: () => void;
+  onOpenArchive?: () => void;
 }) {
   return (
-    <section className="panel space-y-2">
-      <h3 className="text-sm font-semibold uppercase tracking-wide">{title}</h3>
-      {quests.length === 0 ? (
-        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-          Nenhuma.
-        </p>
-      ) : null}
-      {quests.map((quest) => {
-        const selected = quest.id === selectedQuestId;
-        return (
+    <section
+      className="rounded-2xl border px-5 py-8 text-center"
+      style={{
+        borderColor: "var(--ql-border)",
+        background: "var(--ql-surface)",
+      }}
+    >
+      <h3
+        className="text-xl font-bold"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        Nada no agora ainda
+      </h3>
+      <p
+        className="mx-auto mt-2 max-w-md text-sm"
+        style={{ color: "var(--ql-muted)" }}
+      >
+        Crie uma quest
+        {onOpenArchive
+          ? " ou abra o Arquivo para acompanhar algo importado do Jira."
+          : "."}
+      </p>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        <button
+          type="button"
+          className="rounded-xl px-4 py-2 text-sm font-semibold text-white"
+          style={{ background: "var(--ql-accent)" }}
+          onClick={onCreate}
+        >
+          Nova quest
+        </button>
+        {onOpenArchive ? (
           <button
-            key={quest.id}
             type="button"
-            onClick={() => onSelect(quest.id)}
-            className="w-full rounded-xl border px-3 py-2 text-left transition"
-            style={{
-              borderColor: selected ? "var(--ql-accent)" : "var(--ql-border)",
-              background: selected ? "#f0fdfa" : "#fff",
-            }}
+            className="rounded-xl border px-4 py-2 text-sm font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            onClick={onOpenArchive}
           >
-            <p className="font-medium">{quest.titulo}</p>
-            <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-              {statusLabel(quest.status)}
-              {activeQuestId === quest.id ? " · ingest" : ""}
-              {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
-              {quest.status === "pausada" && quest.falta
-                ? ` · ${quest.falta}`
-                : ""}
-            </p>
+            Ir ao Arquivo
           </button>
-        );
-      })}
+        ) : null}
+      </div>
     </section>
+  );
+}
+
+function QuestRow({
+  quest,
+  active,
+  onPause,
+  onResume,
+  onFinish,
+  busy,
+}: {
+  quest: Quest;
+  active: boolean;
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => void;
+  busy: boolean;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-3"
+      style={{
+        borderColor: active ? "var(--ql-accent)" : "var(--ql-border)",
+        background: active ? "#f0fdfa" : "#fff",
+      }}
+    >
+      <div className="min-w-0">
+        <p className="font-medium">{quest.titulo}</p>
+        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+          {statusLabel(quest.status)}
+          {quest.faltaSource === "user" && quest.falta
+            ? ` · falta: ${quest.falta.slice(0, 60)}${quest.falta.length > 60 ? "…" : ""}`
+            : ""}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {quest.status === "pausada" || quest.status === "feita" ? (
+          <button
+            type="button"
+            className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+            style={{ background: "var(--ql-accent)" }}
+            disabled={busy}
+            onClick={onResume}
+          >
+            Retomar
+          </button>
+        ) : null}
+        {quest.status === "ativa" ? (
+          <button
+            type="button"
+            className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            disabled={busy}
+            onClick={onPause}
+          >
+            Pausar
+          </button>
+        ) : null}
+        {quest.status !== "feita" ? (
+          <button
+            type="button"
+            className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            disabled={busy}
+            onClick={onFinish}
+          >
+            Feita
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function SuggestionRow({
+  quest,
+  busy,
+  onWatch,
+  onResume,
+  onPause,
+}: {
+  quest: Quest;
+  busy: boolean;
+  onWatch: () => void;
+  onResume: () => void;
+  onPause: () => void;
+}) {
+  return (
+    <div
+      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-3"
+      style={{ borderColor: "var(--ql-border)", background: "#fff" }}
+    >
+      <div className="min-w-0">
+        <p className="font-medium">{quest.titulo}</p>
+        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+          {quest.ticketIds.join(", ") || "sem ticket"}
+          {quest.epicId ? ` · ${quest.epicId}` : ""}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-60"
+          style={{ borderColor: "var(--ql-border)" }}
+          disabled={busy}
+          onClick={onWatch}
+        >
+          Acompanhar
+        </button>
+        <button
+          type="button"
+          className="rounded-lg border px-2.5 py-1.5 text-xs font-semibold disabled:opacity-60"
+          style={{ borderColor: "var(--ql-border)" }}
+          disabled={busy}
+          onClick={onResume}
+        >
+          Retomar
+        </button>
+        <button
+          type="button"
+          className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+          style={{ background: "var(--ql-accent)" }}
+          disabled={busy}
+          onClick={onPause}
+        >
+          Pausar + falta
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function QuestActionsBlock({
+  quest,
+  busy,
+  commits,
+  onPause,
+  onResume,
+  onFinish,
+}: {
+  quest: Quest;
+  busy: boolean;
+  commits: { id: string; assunto: string }[];
+  onPause: () => void;
+  onResume: () => void;
+  onFinish: () => void;
+}) {
+  return (
+    <div
+      className="space-y-3 rounded-xl border px-3 py-3"
+      style={{ borderColor: "var(--ql-border)" }}
+    >
+      <p className="text-sm font-semibold">{quest.titulo}</p>
+      <div className="flex flex-wrap gap-2">
+        {quest.status === "pausada" || quest.status === "feita" ? (
+          <button
+            type="button"
+            className="rounded-lg px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
+            style={{ background: "var(--ql-accent)" }}
+            disabled={busy}
+            onClick={onResume}
+          >
+            Retomar
+          </button>
+        ) : null}
+        {quest.status === "ativa" ? (
+          <button
+            type="button"
+            className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            onClick={onPause}
+          >
+            Pausar
+          </button>
+        ) : null}
+        {quest.status !== "feita" ? (
+          <button
+            type="button"
+            className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
+            style={{ borderColor: "var(--ql-border)" }}
+            disabled={busy}
+            onClick={onFinish}
+          >
+            Marcar feita
+          </button>
+        ) : null}
+      </div>
+      {commits.length > 0 ? (
+        <ul className="space-y-1 text-sm" style={{ color: "var(--ql-muted)" }}>
+          {commits.slice(0, 8).map((commit) => (
+            <li key={commit.id}>
+              {commit.assunto.slice(0, 100)}
+              {commit.assunto.length > 100 ? "…" : ""}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+          Sem commits nesta quest ainda.
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Sheet({
+  title,
+  onClose,
+  children,
+  wide,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/30">
+      <button
+        type="button"
+        className="absolute inset-0 cursor-default"
+        aria-label="Fechar"
+        onClick={onClose}
+      />
+      <aside
+        className={`relative z-10 h-full overflow-y-auto border-l bg-white p-5 shadow-xl ${
+          wide ? "w-full max-w-xl" : "w-full max-w-md"
+        }`}
+        style={{ borderColor: "var(--ql-border)" }}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <h3
+            className="text-lg font-bold"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {title}
+          </h3>
+          <button
+            type="button"
+            className="rounded-lg border px-2 py-1 text-sm"
+            style={{ borderColor: "var(--ql-border)" }}
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+        </div>
+        {children}
+      </aside>
+    </div>
+  );
+}
+
+function findQuest(
+  home:
+    | {
+        epics: { quests: Quest[] }[];
+        ungrouped: Quest[];
+        suggestions: Quest[];
+      }
+    | undefined,
+  questId: string,
+): Quest | null {
+  if (!home) return null;
+  for (const card of home.epics) {
+    const found = card.quests.find((quest) => quest.id === questId);
+    if (found) return found;
+  }
+  return (
+    home.ungrouped.find((quest) => quest.id === questId) ??
+    home.suggestions.find((quest) => quest.id === questId) ??
+    null
   );
 }
 

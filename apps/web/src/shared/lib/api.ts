@@ -47,6 +47,8 @@ export type Quest = {
   epicScope: "partial" | "full";
   repos: QuestRepo[];
   falta: string;
+  faltaSource: "user" | "import" | null;
+  watching: boolean;
   ticketStatus: string | null;
   ticketSyncedAt: string | null;
   atualizadoEm: string;
@@ -288,6 +290,57 @@ export async function summarizeEpic(
     throw new Error(await readError(response));
   }
   return (await response.json()) as ComplementEpicNotesResult;
+}
+
+export type HomeEpicCard = {
+  epicId: string;
+  quests: Quest[];
+  openCount: number;
+  nextFalta: {
+    questId: string;
+    falta: string;
+    titulo: string;
+  } | null;
+};
+
+export type BoardHome = {
+  epics: HomeEpicCard[];
+  ungrouped: Quest[];
+  suggestions: Quest[];
+};
+
+export async function fetchBoardHome(): Promise<BoardHome> {
+  const response = await fetch("/api/board/home");
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as BoardHome;
+}
+
+export async function fetchArchive(query?: string): Promise<Quest[]> {
+  const params = new URLSearchParams();
+  if (query?.trim()) params.set("q", query.trim());
+  params.set("limit", "100");
+  const response = await fetch(`/api/board/archive?${params}`);
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as Quest[];
+}
+
+export async function promoteQuest(
+  questId: string,
+  body: { mode?: "watch" | "resume" | "pause"; falta?: string } = {},
+): Promise<Quest> {
+  const response = await fetch(`/api/quests/${questId}/promote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as Quest;
 }
 
 export function ticketHref(baseUrl: string, ticketId: string): string | null {

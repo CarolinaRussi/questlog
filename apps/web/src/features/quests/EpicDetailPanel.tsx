@@ -53,9 +53,43 @@ export function EpicDetailPanel({
     },
   });
 
+  const copyMutation = useMutation({
+    mutationFn: async () => {
+      const overview = note?.overview?.trim() || "(sem overview ainda)";
+      const progress = note?.progress?.trim() || "(sem progresso ainda)";
+      const tasks = quests
+        .map(
+          (quest) =>
+            `- ${quest.titulo} [${statusLabel(quest.status)}]` +
+            (quest.faltaSource === "user" && quest.falta
+              ? ` — falta: ${quest.falta}`
+              : ""),
+        )
+        .join("\n");
+      const text = [
+        `Épico ${epicId}`,
+        "",
+        "Overview",
+        overview,
+        "",
+        "O que eu fiz",
+        progress,
+        "",
+        "Tarefas",
+        tasks || "(nenhuma)",
+      ].join("\n");
+      await navigator.clipboard.writeText(text);
+      return text;
+    },
+  });
+
   const geminiConfigured = secretsQuery.data?.geminiConfigured ?? false;
-  const selectedQuest =
-    quests.find((quest) => quest.id === selectedQuestId) ?? null;
+  const continuityQuests = quests.filter(
+    (quest) =>
+      quest.status !== "feita" &&
+      ((quest.faltaSource === "user" && quest.falta.trim()) ||
+        quest.id === selectedQuestId),
+  );
 
   return (
     <div className="space-y-5">
@@ -78,20 +112,41 @@ export function EpicDetailPanel({
             epicId
           )}
         </h3>
-        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-          {quests.length} tarefa{quests.length === 1 ? "" : "s"} neste épico
-        </p>
+      </div>
+
+      <div className="space-y-2">
+        <h4 className="text-sm font-semibold uppercase tracking-wide">
+          O que falta
+        </h4>
+        {continuityQuests.length === 0 ? (
+          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
+            Nenhuma falta registrada ainda. Pause uma tarefa e anote o que
+            falta.
+          </p>
+        ) : (
+          continuityQuests.map((quest) => (
+            <div
+              key={quest.id}
+              className="rounded-xl px-3 py-3"
+              style={{ background: "#f0fdf4" }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide">
+                {quest.titulo}
+              </p>
+              <p className="mt-1 text-base font-medium">
+                {quest.faltaSource === "user" && quest.falta.trim()
+                  ? quest.falta
+                  : "—"}
+              </p>
+            </div>
+          ))
+        )}
       </div>
 
       <div className="space-y-2">
         <h4 className="text-sm font-semibold uppercase tracking-wide">
           Tarefas
         </h4>
-        {quests.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-            Nenhuma quest ligada a este épico.
-          </p>
-        ) : null}
         {quests.map((quest) => {
           const selected = quest.id === selectedQuestId;
           return (
@@ -109,16 +164,15 @@ export function EpicDetailPanel({
               <p className="mt-0.5 text-sm" style={{ color: "var(--ql-muted)" }}>
                 {statusLabel(quest.status)}
                 {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
-                {quest.status === "pausada" && quest.falta
-                  ? ` · falta: ${quest.falta}`
-                  : ""}
               </p>
             </button>
           );
         })}
       </div>
 
-      {selectedQuest ? questActions : (
+      {selectedQuestId ? (
+        questActions
+      ) : (
         <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
           Clique numa tarefa para pausar, retomar ou marcar feita.
         </p>
@@ -131,25 +185,36 @@ export function EpicDetailPanel({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide">
-              Resumo do épico
+              Memória do épico
             </p>
             <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-              Junta as tarefas acima — complementar, não recomeçar do zero.
+              Overview + o que você foi fazendo (pra retomar ou currículo).
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
-            style={{ background: "var(--ql-accent)" }}
-            disabled={summarizeMutation.isPending || !geminiConfigured}
-            onClick={() => summarizeMutation.mutate()}
-          >
-            {summarizeMutation.isPending
-              ? "Resumindo…"
-              : note?.overview || note?.progress
-                ? "Complementar resumo"
-                : "Gerar resumo"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-60"
+              style={{ borderColor: "var(--ql-border)" }}
+              disabled={copyMutation.isPending}
+              onClick={() => copyMutation.mutate()}
+            >
+              {copyMutation.isSuccess ? "Copiado" : "Copiar resumo"}
+            </button>
+            <button
+              type="button"
+              className="rounded-xl px-3 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              style={{ background: "var(--ql-accent)" }}
+              disabled={summarizeMutation.isPending || !geminiConfigured}
+              onClick={() => summarizeMutation.mutate()}
+            >
+              {summarizeMutation.isPending
+                ? "Resumindo…"
+                : note?.overview || note?.progress
+                  ? "Complementar"
+                  : "Gerar resumo"}
+            </button>
+          </div>
         </div>
 
         {!geminiConfigured ? (
@@ -163,16 +228,6 @@ export function EpicDetailPanel({
             {summarizeMutation.error instanceof Error
               ? summarizeMutation.error.message
               : "Erro ao resumir"}
-          </p>
-        ) : null}
-
-        {summarizeMutation.isSuccess ? (
-          <p className="text-sm" style={{ color: "var(--ql-accent)" }}>
-            Resumo atualizado
-            {summarizeMutation.data.usedJiraContext
-              ? " (incluiu contexto do Jira)"
-              : ""}
-            .
           </p>
         ) : null}
 
