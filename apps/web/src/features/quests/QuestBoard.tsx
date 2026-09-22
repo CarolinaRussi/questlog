@@ -7,6 +7,7 @@ import {
   fetchCommits,
   fetchQuests,
   pauseQuest,
+  refreshTickets,
   resumeQuest,
   ticketHref,
   type Profile,
@@ -28,6 +29,7 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
   const [newTickets, setNewTickets] = useState("");
   const [pausingQuestId, setPausingQuestId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [formNotice, setFormNotice] = useState<string | null>(null);
 
   const questsQuery = useQuery({
     queryKey: ["quests"],
@@ -110,6 +112,28 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
     },
   });
 
+  const refreshMutation = useMutation({
+    mutationFn: refreshTickets,
+    onSuccess: (result) => {
+      setFormError(null);
+      setFormNotice(
+        result.fetched === 0
+          ? "Nenhuma ticket para atualizar."
+          : `Tickets atualizados: ${result.updated}` +
+              (result.markedFeita > 0
+                ? ` · ${result.markedFeita} marcadas feitas`
+                : ""),
+      );
+      invalidateBoard();
+    },
+    onError: (error) => {
+      setFormNotice(null);
+      setFormError(
+        error instanceof Error ? error.message : "Erro ao atualizar tickets",
+      );
+    },
+  });
+
   const ativas =
     questsQuery.data?.filter((quest) => quest.status === "ativa") ?? [];
   const pausadas =
@@ -133,14 +157,27 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
               {profile.commitHint ? ` · ${profile.commitHint}` : null}
             </p>
           </div>
-          <button
-            type="button"
-            className="rounded-xl border px-3 py-2 text-sm font-semibold"
-            style={{ borderColor: "var(--ql-border)" }}
-            onClick={onOpenSettings}
-          >
-            Settings
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="rounded-xl border px-3 py-2 text-sm font-semibold disabled:opacity-60"
+              style={{ borderColor: "var(--ql-border)" }}
+              disabled={refreshMutation.isPending}
+              onClick={() => refreshMutation.mutate()}
+            >
+              {refreshMutation.isPending
+                ? "Atualizando…"
+                : "Atualizar tickets"}
+            </button>
+            <button
+              type="button"
+              className="rounded-xl border px-3 py-2 text-sm font-semibold"
+              style={{ borderColor: "var(--ql-border)" }}
+              onClick={onOpenSettings}
+            >
+              Settings
+            </button>
+          </div>
         </div>
 
         <form
@@ -306,6 +343,22 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
                       </span>
                     );
                   })}
+                  {selectedQuest.ticketStatus ? (
+                    <span
+                      className="rounded-full border px-2.5 py-1 text-sm"
+                      style={{
+                        borderColor: "var(--ql-accent)",
+                        color: "var(--ql-accent)",
+                      }}
+                      title={
+                        selectedQuest.ticketSyncedAt
+                          ? `Sincronizado em ${new Date(selectedQuest.ticketSyncedAt).toLocaleString("pt-BR")}`
+                          : undefined
+                      }
+                    >
+                      {selectedQuest.ticketStatus}
+                    </span>
+                  ) : null}
                 </div>
 
                 {selectedQuest.status === "pausada" || selectedQuest.falta ? (
@@ -442,6 +495,15 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
         </div>
       ) : null}
 
+      {formNotice ? (
+        <p
+          className="rounded-lg px-3 py-2 text-sm"
+          style={{ background: "#f0fdf4", color: "#166534" }}
+        >
+          {formNotice}
+        </p>
+      ) : null}
+
       {formError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
           {formError}
@@ -489,6 +551,7 @@ function QuestGroup({
             <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
               {statusLabel(quest.status)}
               {activeQuestId === quest.id ? " · ingest" : ""}
+              {quest.ticketStatus ? ` · ${quest.ticketStatus}` : ""}
               {quest.status === "pausada" && quest.falta
                 ? ` · ${quest.falta}`
                 : ""}

@@ -47,6 +47,8 @@ export type Quest = {
   epicScope: "partial" | "full";
   repos: QuestRepo[];
   falta: string;
+  ticketStatus: string | null;
+  ticketSyncedAt: string | null;
   atualizadoEm: string;
   createdAt: string;
 };
@@ -202,6 +204,25 @@ export async function fetchCommits(options?: {
     throw new Error(await readError(response));
   }
   return (await response.json()) as CommitRow[];
+}
+
+export type RefreshTicketsResult = {
+  updated: number;
+  markedFeita: number;
+  unmatched: number;
+  fetched: number;
+};
+
+export async function refreshTickets(): Promise<RefreshTicketsResult> {
+  const response = await fetch("/api/tickets/refresh", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as RefreshTicketsResult;
 }
 
 export function ticketHref(baseUrl: string, ticketId: string): string | null {
