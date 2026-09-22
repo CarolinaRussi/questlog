@@ -43,13 +43,12 @@ export async function runRemindCommand(): Promise<void> {
       console.log("Abre o board e retoma pelo campo Falta se precisar.");
     } else {
       console.log(`API fora (${baseUrl}).`);
-      console.log("Sobe com: pnpm --filter @questlog/server start");
-      console.log("(ou pnpm dev quando o web estiver na 1.10)");
+      console.log("Sobe com: pnpm start");
     }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error(`questlog remind: ${message}`);
     console.log(`Board esperado em ${baseUrl}`);
-    console.log("Sobe a API com: pnpm --filter @questlog/server start");
+    console.log("Sobe com: pnpm start");
   }
 }

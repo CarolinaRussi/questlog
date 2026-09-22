@@ -6,42 +6,29 @@ Local-first · SQLite · API em `127.0.0.1` · hooks do Cursor via CLI.
 
 ## Como abrir de manhã
 
-Num terminal, na pasta do repo:
+Um terminal só:
 
 ```bash
-pnpm install
-pnpm --filter @questlog/core build
+pnpm start
+```
+
+Isso builda o `core` e sobe **API + web** juntos. Abra **http://127.0.0.1:5173**.
+
+### Primeira vez (só uma vez)
+
+```bash
+pnpm setup
 pnpm seed -- gran
 ```
 
-Ajuste os **paths dos repos** no wizard/Settings da UI (o seed Gran usa placeholders `~/projetos/...`).
-
-Suba API + web:
-
-```bash
-pnpm --filter @questlog/server start
-```
-
-Em outro terminal:
-
-```bash
-pnpm --filter @questlog/web dev
-```
-
-Abra **http://127.0.0.1:5173** (proxy `/api` → `8787`).
-
-Ou, com tudo em paralelo (depois do build do core):
-
-```bash
-pnpm dev
-```
+Depois ajuste os paths dos repos no **wizard/Settings** da UI.
 
 ### Checklist do dia
 
-1. Abrir o Cursor → o hook `sessionStart` deve lembrar o board (`questlog remind`)
-2. Abrir http://127.0.0.1:5173
-3. Confirmar/criar a quest ativa e o campo **Falta** se estiver retomando
-4. Trabalhar e commitar nos repos do perfil → `ingest-commit` atualiza a timeline
+1. `pnpm start` → http://127.0.0.1:5173
+2. (Opcional) hook `sessionStart` com `pnpm remind`
+3. Confirmar quest ativa / campo **Falta**
+4. Commits nos repos do perfil → `ingest-commit` atualiza a timeline
 
 ## Seed de exemplos
 

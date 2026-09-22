@@ -46,9 +46,8 @@ export function App() {
         <section className="panel">
           <p className="text-red-800">
             API fora. Rode{" "}
-            <code className="rounded bg-stone-200 px-1">
-              pnpm --filter @questlog/server start
-            </code>
+            <code className="rounded bg-stone-200 px-1">pnpm start</code>
+            {" "}na pasta do QuestLog.
           </p>
         </section>
       ) : null}
