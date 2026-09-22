@@ -228,18 +228,31 @@ Entregar **uma fatia por vez**; review + commit antes da próxima.
 
 Critério de pronto da Fase 1 = fatias **1.1–1.13** verdes + critérios de sucesso do MVP abaixo.
 
-### Fase 2 — Atrito zero + multi-perfil
+### Fase 2 — Atrito zero (multi-perfil depois)
 
-- UI de troca de perfil
-- Inferência de branch polida
-- Pausar com `falta` obrigatório polido
-- Live update (polling em `atualizado_em` ou SSE)
-- Opcional: fila local se ingest falhar (hoje: fail-open e segue)
+Troca de perfil na UI fica **fora desta fase** (schema já tem `profiles`; UI de switch = futuro).
+
+Entregar **uma fatia por vez**; review + commit antes da próxima.
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **2.1** | Inferência de branch mais robusta no `ingestCommit` / match (padrões `feature/TICKET-…`, case, múltiplos tickets na branch) | `feat(core): polish branch ticket inference` |
+| **2.2** | Pausar na UI: fluxo caprichado (`falta` obrigatório, confirmação clara, não dá para pausar sem texto) | `feat(web): polish pause quest with required falta` |
+| **2.3** | Live update no board: polling leve em `atualizado_em` (quests/commits/profile) sem refresh manual | `feat(web): poll board for live commit updates` |
+| **2.4** | (Opcional) Fila local se `ingest-commit` falhar — replay depois; senão manter só fail-open | `feat(cli): local ingest retry queue` |
+
+Critério de pronto da Fase 2 = **2.1–2.3** verdes; **2.4** só se valer a dor no dia a dia.
+
+### Fase 2b — Multi-perfil (futuro)
+
+- UI de troca de perfil + N registros em `profiles`
+- Não bloqueia 2.1–2.3
 
 ### Fase 3 — Ticket read-only (opcional)
 
 - API externa (Jira/etc.) só título/status das keys do perfil
 - Nunca espelhar descrição completa do card
+- Inclui “Refresh do Jira” para quests já importadas
 
 ### Fase 4 — App instalável
 
