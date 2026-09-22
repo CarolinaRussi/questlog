@@ -48,3 +48,14 @@ body {
   border-color: var(--ql-accent);
   box-shadow: 0 0 0 3px rgb(15 118 110 / 0.15);
 }
+
+button:not(:disabled),
+a[href],
+summary,
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
