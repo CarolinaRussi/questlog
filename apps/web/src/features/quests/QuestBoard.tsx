@@ -127,6 +127,9 @@ export function QuestBoard({ profile, onOpenSettings }: QuestBoardProps) {
         result.fetched === 0
           ? "Nenhuma ticket para atualizar."
           : `Tickets atualizados: ${result.updated}` +
+              (result.epicLinked > 0
+                ? ` · ${result.epicLinked} com épico`
+                : "") +
               (result.markedFeita > 0
                 ? ` · ${result.markedFeita} marcadas feitas`
                 : ""),

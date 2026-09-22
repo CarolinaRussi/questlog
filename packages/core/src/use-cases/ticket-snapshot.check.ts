@@ -37,7 +37,12 @@ try {
 
   const result = await applyTicketSnapshots({
     issues: [
-      { key: "demo-1", summary: "Login ok", status: "Em andamento" },
+      {
+        key: "demo-1",
+        summary: "Login ok",
+        status: "Em andamento",
+        epicId: "DEMO-100",
+      },
       { key: "DEMO-99", summary: "Orfã", status: "To Do" },
       { key: "DEMO-2", summary: "Fechou", status: "Done" },
     ],
@@ -45,11 +50,13 @@ try {
 
   assert.equal(result.updated, 2);
   assert.equal(result.markedFeita, 1);
+  assert.equal(result.epicLinked, 1);
   assert.equal(result.unmatched, 1);
 
   const refreshed = await getQuest(openQuest.id);
   assert.equal(refreshed?.titulo, "[DEMO-1] Login ok");
   assert.equal(refreshed?.ticketStatus, "Em andamento");
+  assert.equal(refreshed?.epicId, "DEMO-100");
   assert.ok(refreshed?.ticketSyncedAt);
   assert.equal(refreshed?.falta, "não apagar isto");
   assert.equal(refreshed?.status, "pausada");
@@ -59,7 +66,7 @@ try {
   assert.equal(doneQuest?.ticketStatus, "Done");
 
   await dataSource.destroy();
-  console.log("check:ticket-snapshot ok — update + falta preserved + done");
+  console.log("check:ticket-snapshot ok — update + epic + falta preserved + done");
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }

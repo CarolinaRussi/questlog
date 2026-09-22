@@ -209,6 +209,7 @@ export async function fetchCommits(options?: {
 export type RefreshTicketsResult = {
   updated: number;
   markedFeita: number;
+  epicLinked: number;
   unmatched: number;
   fetched: number;
 };

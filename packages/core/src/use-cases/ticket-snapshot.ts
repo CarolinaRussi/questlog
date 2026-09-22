@@ -10,6 +10,7 @@ import {
 export type ApplyTicketSnapshotsResult = {
   updated: number;
   markedFeita: number;
+  epicLinked: number;
   unmatched: number;
 };
 
@@ -52,6 +53,7 @@ export async function applyTicketSnapshots(
   const result: ApplyTicketSnapshotsResult = {
     updated: 0,
     markedFeita: 0,
+    epicLinked: 0,
     unmatched: 0,
   };
   const updatedQuestIds = new Set<string>();
@@ -66,7 +68,11 @@ export async function applyTicketSnapshots(
     }
 
     for (const quest of matches) {
-      const becameFeita = applySnapshotToQuest(quest, issue, now);
+      const { becameFeita, epicLinked } = applySnapshotToQuest(
+        quest,
+        issue,
+        now,
+      );
       await quest.save();
 
       if (!updatedQuestIds.has(quest.id)) {
@@ -75,6 +81,9 @@ export async function applyTicketSnapshots(
       }
       if (becameFeita) {
         result.markedFeita += 1;
+      }
+      if (epicLinked) {
+        result.epicLinked += 1;
       }
     }
   }
@@ -103,19 +112,29 @@ function applySnapshotToQuest(
   quest: Quest,
   issue: TicketSnapshot,
   now: Date,
-): boolean {
+): { becameFeita: boolean; epicLinked: boolean } {
   const key = normalizeTicketId(issue.key);
   const previousStatus = quest.status;
+  let becameFeita = false;
+  let epicLinked = false;
 
   quest.titulo = `[${key}] ${issue.summary}`;
   quest.ticketStatus = issue.status;
   quest.ticketSyncedAt = now;
   quest.atualizadoEm = now;
 
-  if (isExternalDone(issue.status) && previousStatus !== "feita") {
-    quest.status = "feita";
-    return true;
+  if (issue.epicId) {
+    const nextEpic = normalizeTicketId(issue.epicId);
+    if (quest.epicId !== nextEpic) {
+      quest.epicId = nextEpic;
+      epicLinked = true;
+    }
   }
 
-  return false;
+  if (isExternalDone(issue.status) && previousStatus !== "feita") {
+    quest.status = "feita";
+    becameFeita = true;
+  }
+
+  return { becameFeita, epicLinked };
 }

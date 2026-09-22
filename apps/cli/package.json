@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@questlog/core": "workspace:*",
+    "dotenv": "17.2.1",
     "tsx": "^4.20.4"
   },
   "devDependencies": {

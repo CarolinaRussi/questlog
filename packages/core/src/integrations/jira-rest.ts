@@ -13,6 +13,7 @@ type JiraSearchIssue = {
   fields?: {
     summary?: string;
     status?: { name?: string };
+    parent?: { key?: string };
   };
 };
 
@@ -23,7 +24,7 @@ type JiraSearchResponse = {
 };
 
 /**
- * Fetch title + status for ticket keys via Jira Cloud REST.
+ * Fetch title + status (+ parent epic when present) for ticket keys via Jira Cloud REST.
  * Credentials are passed in (callers read env); never stored by core.
  */
 export async function fetchJiraTicketSnapshots(
@@ -55,7 +56,7 @@ export async function fetchJiraTicketSnapshots(
       },
       body: JSON.stringify({
         jql,
-        fields: ["summary", "status"],
+        fields: ["summary", "status", "parent"],
         maxResults: CHUNK_SIZE,
       }),
     });
@@ -79,7 +80,13 @@ export async function fetchJiraTicketSnapshots(
       if (!key || !summary || !status) {
         continue;
       }
-      snapshots.push({ key, summary, status });
+      const parentKey = issue.fields?.parent?.key?.trim();
+      snapshots.push({
+        key,
+        summary,
+        status,
+        epicId: parentKey || null,
+      });
     }
   }
 

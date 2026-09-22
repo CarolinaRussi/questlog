@@ -59,6 +59,6 @@ export async function runRefreshJiraCommand(
 
   const result = await applyTicketSnapshots({ issues });
   console.log(
-    `refresh-jira: updated=${result.updated} markedFeita=${result.markedFeita} unmatched=${result.unmatched}`,
+    `refresh-jira: updated=${result.updated} epicLinked=${result.epicLinked} markedFeita=${result.markedFeita} unmatched=${result.unmatched}`,
   );
 }

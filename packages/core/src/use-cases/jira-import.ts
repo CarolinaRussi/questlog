@@ -92,7 +92,7 @@ async function importOneIssue(
     titulo: `[${issue.key}] ${issue.summary}`,
     status: mapped,
     ticketIds: [issue.key],
-    epicId: null,
+    epicId: issue.epicId ? issue.epicId.trim().toUpperCase() : null,
     epicScope: "partial",
     repos: [],
     falta: mapped === "pausada" ? `Status no Jira: ${issue.status}` : "",
