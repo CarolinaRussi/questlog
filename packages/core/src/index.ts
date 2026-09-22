@@ -6,6 +6,7 @@ export type { InitDbOptions } from "./db/init-db.js";
 export { Profile } from "./db/entities/profile.entity.js";
 export { Quest } from "./db/entities/quest.entity.js";
 export { Commit } from "./db/entities/commit.entity.js";
+export { EpicNote } from "./db/entities/epic-note.entity.js";
 
 export type {
   QuestStatus,
@@ -89,5 +90,12 @@ export {
   fetchJiraTicketSnapshots,
   type JiraRestCredentials,
 } from "./integrations/jira-rest.js";
+
+export {
+  listEpicNotes,
+  getEpicNote,
+  getOrCreateEpicNote,
+  saveEpicNoteFields,
+} from "./use-cases/epic-note.js";
 
 export const QUESTLOG_CORE_VERSION = "0.0.0";
