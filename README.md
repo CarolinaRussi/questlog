@@ -49,6 +49,8 @@ pnpm --filter @questlog/cli ingest-commit -- --strict
 ```
 
 `ingest-commit` é **fail-open** por padrão (não quebra o `git commit`).
+Se o ingest falhar depois de ler o commit, o payload vai para uma fila local
+(`ingest-queue.json` no data dir) e é reprocessado no próximo `ingest-commit`.
 
 ## Hooks do Cursor
 

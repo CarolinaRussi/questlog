@@ -22,7 +22,11 @@ Commands:
   help                    Show this help
 
 Flags:
-  ingest-commit --strict   Exit non-zero on failure (default is fail-open)`);
+  ingest-commit --strict   Exit non-zero on failure (default is fail-open)
+
+Notes:
+  Failed ingest payloads are queued under the QuestLog data dir and
+  replayed on the next successful ingest-commit run.`);
     return;
   }
 
