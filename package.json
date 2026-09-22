@@ -5,6 +5,8 @@
   "packageManager": "pnpm@10.19.0",
   "scripts": {
     "dev": "pnpm --filter @questlog/core build && pnpm -r --parallel --filter @questlog/core --filter @questlog/server --filter @questlog/web --filter @questlog/cli dev",
+    "dev:web": "pnpm --filter @questlog/web dev",
+    "dev:server": "pnpm --filter @questlog/server dev",
     "build": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web build",
     "typecheck": "pnpm -r --filter @questlog/core --filter @questlog/server --filter @questlog/cli --filter @questlog/web typecheck",
     "seed": "pnpm --filter @questlog/core build && pnpm --filter @questlog/cli seed"
