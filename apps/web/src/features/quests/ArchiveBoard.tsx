@@ -252,6 +252,36 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
         </p>
       ) : null}
 
+      {ungrouped.length > 0 ? (
+        <section className="space-y-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wide">
+            Sem épico
+          </h3>
+          <div className="space-y-2">
+            {ungrouped.map((quest) => (
+              <ArchiveQuestRow
+                key={quest.id}
+                quest={quest}
+                busy={promoteMutation.isPending}
+                onWatch={() =>
+                  promoteMutation.mutate({
+                    questId: quest.id,
+                    mode: "watch",
+                  })
+                }
+                onResume={() =>
+                  promoteMutation.mutate({
+                    questId: quest.id,
+                    mode: "resume",
+                  })
+                }
+                onPause={() => setPausingQuest(quest)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       {epics.length > 0 ? (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold uppercase tracking-wide">
@@ -325,36 +355,6 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {ungrouped.length > 0 ? (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide">
-            Sem épico
-          </h3>
-          <div className="space-y-2">
-            {ungrouped.map((quest) => (
-              <ArchiveQuestRow
-                key={quest.id}
-                quest={quest}
-                busy={promoteMutation.isPending}
-                onWatch={() =>
-                  promoteMutation.mutate({
-                    questId: quest.id,
-                    mode: "watch",
-                  })
-                }
-                onResume={() =>
-                  promoteMutation.mutate({
-                    questId: quest.id,
-                    mode: "resume",
-                  })
-                }
-                onPause={() => setPausingQuest(quest)}
-              />
             ))}
           </div>
         </section>

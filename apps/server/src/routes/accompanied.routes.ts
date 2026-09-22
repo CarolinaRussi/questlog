@@ -9,6 +9,7 @@ import {
   promoteQuest,
   promoteQuestInputSchema,
   getProfile,
+  resolveEpicTitles,
 } from "@questlog/core";
 import { epicTitlesForBoard } from "../lib/epic-titles.js";
 
@@ -37,7 +38,9 @@ export async function registerAccompaniedRoutes(
     }
 
     const epicIds = [...byEpic.keys()].filter((epicId) => epicId.length > 0);
-    const titles = await epicTitlesForBoard(epicIds);
+    // Local titles only — never block the board on Jira.
+    const titles = await resolveEpicTitles(epicIds);
+    void epicTitlesForBoard(epicIds);
 
     const epics = epicIds
       .map((epicId) => {
@@ -54,7 +57,10 @@ export async function registerAccompaniedRoutes(
           title: titles[epicId] ?? "",
         };
       })
-      .sort((left, right) => left.epicId.localeCompare(right.epicId));
+      .sort(
+        (left, right) =>
+          ticketNumber(right.epicId) - ticketNumber(left.epicId),
+      );
 
     const ungrouped = byEpic.get("") ?? [];
 
@@ -78,7 +84,10 @@ export async function registerAccompaniedRoutes(
           .filter(Boolean),
       ),
     ];
-    const epicTitles = await epicTitlesForBoard(epicIds);
+    // Local titles first so the archive renders immediately with every quest.
+    // Jira fill runs in background (Status Jira also syncs titles).
+    const epicTitles = await resolveEpicTitles(epicIds);
+    void epicTitlesForBoard(epicIds);
     return { quests, epicTitles };
   });
 
@@ -95,4 +104,9 @@ export async function registerAccompaniedRoutes(
     const body = promoteQuestInputSchema.parse(request.body ?? {});
     return promoteEpic(epicId, body);
   });
+}
+
+function ticketNumber(value: string): number {
+  const match = value.toUpperCase().match(/-(\d+)\s*$/);
+  return match ? Number(match[1]) : 0;
 }
