@@ -14,7 +14,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsc -p tsconfig.json --watch",
     "check:db": "tsx src/db/init-db.check.ts",
-    "check:profile": "tsx src/use-cases/profile.check.ts"
+    "check:profile": "tsx src/use-cases/profile.check.ts",
+    "check:quest": "tsx src/use-cases/quest.check.ts"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
