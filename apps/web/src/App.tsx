@@ -80,7 +80,10 @@ export function App() {
       ) : null}
 
       {!apiDown && !loading && profileQuery.data && screen === "archive" ? (
-        <ArchiveBoard onBack={() => setScreen("board")} />
+        <ArchiveBoard
+          profile={profileQuery.data}
+          onBack={() => setScreen("board")}
+        />
       ) : null}
 
       {!apiDown && !loading && profileQuery.data && screen === "board" ? (

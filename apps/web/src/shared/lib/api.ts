@@ -320,7 +320,7 @@ export async function fetchBoardHome(): Promise<BoardHome> {
 export async function fetchArchive(query?: string): Promise<Quest[]> {
   const params = new URLSearchParams();
   if (query?.trim()) params.set("q", query.trim());
-  params.set("limit", "100");
+  params.set("limit", "200");
   const response = await fetch(`/api/board/archive?${params}`);
   if (!response.ok) {
     throw new Error(await readError(response));
