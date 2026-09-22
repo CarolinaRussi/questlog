@@ -5,7 +5,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import type { EpicScope, QuestRepo, QuestStatus } from "../../domain/types.js";
+import type { EpicScope, FaltaSource, QuestRepo, QuestStatus } from "../../domain/types.js";
 
 @Entity({ name: "quests" })
 export class Quest extends BaseEntity {
@@ -35,6 +35,14 @@ export class Quest extends BaseEntity {
 
   @Column({ type: "text", default: "" })
   falta!: string;
+
+  /** null = empty falta; import stubs vs user-written continuity. */
+  @Column({ name: "falta_source", type: "text", nullable: true })
+  faltaSource!: FaltaSource | null;
+
+  /** Explicit or implicit focus for the home board. */
+  @Column({ type: "boolean", default: false })
+  watching!: boolean;
 
   /** Last known external ticket status label (e.g. Jira). Read-only sync. */
   @Column({ name: "ticket_status", type: "text", nullable: true })

@@ -78,6 +78,8 @@ export async function createQuest(rawInput: CreateQuestInput): Promise<Quest> {
     epicScope: input.epicScope ?? "partial",
     repos: input.repos,
     falta: input.falta ?? "",
+    faltaSource: input.falta?.trim() ? "user" : null,
+    watching: true,
     atualizadoEm: new Date(),
   });
   await quest.save();
@@ -102,7 +104,10 @@ export async function updateQuest(
   if (input.epicId !== undefined) quest.epicId = input.epicId;
   if (input.epicScope !== undefined) quest.epicScope = input.epicScope;
   if (input.repos !== undefined) quest.repos = input.repos;
-  if (input.falta !== undefined) quest.falta = input.falta;
+  if (input.falta !== undefined) {
+    quest.falta = input.falta;
+    quest.faltaSource = input.falta.trim() ? "user" : null;
+  }
 
   touch(quest);
   await quest.save();
@@ -118,6 +123,8 @@ export async function pauseQuest(
 
   quest.status = "pausada";
   quest.falta = input.falta;
+  quest.faltaSource = "user";
+  quest.watching = true;
   touch(quest);
   await quest.save();
   return quest;
@@ -126,6 +133,7 @@ export async function pauseQuest(
 export async function resumeQuest(questId: string): Promise<Quest> {
   const quest = await requireQuest(questId);
   quest.status = "ativa";
+  quest.watching = true;
   touch(quest);
   await quest.save();
   return quest;
@@ -136,6 +144,7 @@ export async function completeQuest(questId: string): Promise<Quest> {
   const profile = await getProfile();
 
   quest.status = "feita";
+  quest.watching = false;
   touch(quest);
   await quest.save();
 
@@ -154,6 +163,10 @@ export async function setActiveQuest(questId: string): Promise<Quest> {
   if (quest.profileId !== profile.id) {
     throw new QuestNotFoundError(questId);
   }
+
+  quest.watching = true;
+  touch(quest);
+  await quest.save();
 
   profile.activeQuestId = quest.id;
   await profile.save();

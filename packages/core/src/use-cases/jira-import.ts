@@ -96,6 +96,8 @@ async function importOneIssue(
     epicScope: "partial",
     repos: [],
     falta: mapped === "pausada" ? `Status no Jira: ${issue.status}` : "",
+    faltaSource: mapped === "pausada" ? "import" : null,
+    watching: false,
     atualizadoEm: new Date(),
   });
   await quest.save();

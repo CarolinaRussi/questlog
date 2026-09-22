@@ -108,8 +108,11 @@ export async function ingestCommit(
   await commit.save();
 
   if (resolution.questId) {
-    const quest = openQuests.find((item) => item.id === resolution.questId);
+    const quest =
+      openQuests.find((item) => item.id === resolution.questId) ??
+      (await Quest.findOneBy({ id: resolution.questId }));
     if (quest) {
+      quest.watching = true;
       quest.atualizadoEm = new Date();
       await quest.save();
     }

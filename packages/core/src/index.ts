@@ -11,6 +11,7 @@ export { EpicNote } from "./db/entities/epic-note.entity.js";
 export type {
   QuestStatus,
   EpicScope,
+  FaltaSource,
   ProfileRepo,
   QuestRepo,
 } from "./domain/types.js";
@@ -41,6 +42,18 @@ export {
   type UpdateQuestInput,
   type PauseQuestInput,
 } from "./use-cases/quest.schemas.js";
+
+export {
+  isImportFaltaStub,
+  isAccompaniedQuest,
+  pickNextFaltaForEpic,
+  listAccompaniedQuests,
+  listArchiveQuests,
+  listArchiveSuggestions,
+  promoteQuest,
+  promoteQuestInputSchema,
+  type PromoteQuestInput,
+} from "./use-cases/accompanied.js";
 
 export {
   ingestCommit,
