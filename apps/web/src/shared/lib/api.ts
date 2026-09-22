@@ -327,9 +327,15 @@ export type ArchiveBoardResponse = {
 
 export async function fetchArchive(query?: string): Promise<ArchiveBoardResponse> {
   const params = new URLSearchParams();
-  if (query?.trim()) params.set("q", query.trim());
-  params.set("limit", "200");
-  const response = await fetch(`/api/board/archive?${params}`);
+  if (query?.trim()) {
+    params.set("q", query.trim());
+    params.set("limit", "200");
+  }
+  // Browse without q: no limit — full epic index
+  const queryString = params.toString();
+  const response = await fetch(
+    `/api/board/archive${queryString ? `?${queryString}` : ""}`,
+  );
   if (!response.ok) {
     throw new Error(await readError(response));
   }

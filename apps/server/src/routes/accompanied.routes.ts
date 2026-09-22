@@ -14,7 +14,7 @@ import { epicTitlesForBoard } from "../lib/epic-titles.js";
 
 const archiveQuerySchema = z.object({
   q: z.string().optional(),
-  limit: z.coerce.number().int().positive().max(200).optional(),
+  limit: z.coerce.number().int().positive().max(5000).optional(),
 });
 
 const idParamsSchema = z.object({

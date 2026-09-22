@@ -161,10 +161,15 @@ export async function listArchiveQuests(options?: {
         .toLowerCase();
       return haystack.includes(query);
     });
+    const limit = options?.limit ?? 200;
+    return archive.slice(0, limit);
   }
 
-  const limit = options?.limit ?? 100;
-  return archive.slice(0, limit);
+  // Browse mode: return the full archive so every epic can appear in the index.
+  if (options?.limit != null) {
+    return archive.slice(0, options.limit);
+  }
+  return archive;
 }
 
 export async function listArchiveSuggestions(limit = 3): Promise<Quest[]> {
