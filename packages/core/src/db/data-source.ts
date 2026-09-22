@@ -1,5 +1,9 @@
 import { DataSource } from "typeorm";
+import { Commit } from "./entities/commit.entity.js";
+import { Profile } from "./entities/profile.entity.js";
+import { Quest } from "./entities/quest.entity.js";
 import { Bootstrap20260922120000 } from "./migrations/20260922120000-bootstrap.js";
+import { ProfileQuestCommit20260922130000 } from "./migrations/20260922130000-profile-quest-commit.js";
 
 const BUSY_TIMEOUT_MS = 5000;
 
@@ -9,8 +13,8 @@ export function createDataSource(databasePath: string): DataSource {
     database: databasePath,
     enableWAL: true,
     timeout: BUSY_TIMEOUT_MS,
-    entities: [],
-    migrations: [Bootstrap20260922120000],
+    entities: [Profile, Quest, Commit],
+    migrations: [Bootstrap20260922120000, ProfileQuestCommit20260922130000],
     migrationsTableName: "typeorm_migrations",
   });
 }

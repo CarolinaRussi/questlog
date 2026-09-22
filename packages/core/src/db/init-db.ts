@@ -4,6 +4,9 @@ import { dirname } from "node:path";
 import type { DataSource } from "typeorm";
 import { getDatabasePath } from "../paths/get-data-dir.js";
 import { createDataSource } from "./data-source.js";
+import { Commit } from "./entities/commit.entity.js";
+import { Profile } from "./entities/profile.entity.js";
+import { Quest } from "./entities/quest.entity.js";
 
 export type InitDbOptions = {
   databasePath?: string;
@@ -16,5 +19,10 @@ export async function initDb(options: InitDbOptions = {}): Promise<DataSource> {
   const dataSource = createDataSource(databasePath);
   await dataSource.initialize();
   await dataSource.runMigrations();
+
+  Profile.useDataSource(dataSource);
+  Quest.useDataSource(dataSource);
+  Commit.useDataSource(dataSource);
+
   return dataSource;
 }
