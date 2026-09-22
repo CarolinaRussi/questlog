@@ -88,8 +88,17 @@ export {
 
 export {
   fetchJiraTicketSnapshots,
+  fetchJiraIssueContext,
+  fetchJiraIssueContexts,
+  jiraDocToPlain,
   type JiraRestCredentials,
+  type JiraIssueContext,
 } from "./integrations/jira-rest.js";
+
+export {
+  generateEpicNotesWithGemini,
+  type GeminiGenerateResult,
+} from "./integrations/gemini-rest.js";
 
 export {
   listEpicNotes,
@@ -97,6 +106,13 @@ export {
   getOrCreateEpicNote,
   saveEpicNoteFields,
 } from "./use-cases/epic-note.js";
+
+export {
+  complementEpicNotes,
+  GeminiNotConfiguredError,
+  type ComplementEpicNotesResult,
+  type EpicNotesGenerator,
+} from "./use-cases/complement-epic-notes.js";
 
 export {
   getLocalSecrets,
