@@ -1,0 +1,13 @@
+---
+description: CLI adapter — Cursor hooks call core, fail-open
+globs: apps/cli/**/*
+alwaysApply: false
+---
+
+# CLI (`apps/cli`)
+
+- Thin adapter: parse argv/cwd/env → call `packages/core` → print concise output.
+- Commands expected by the plan: `ingest-commit`, `remind`, `seed` (names may vary; behavior must match PLAN).
+- **Fail-open** for hook paths: non-zero only when useful for humans running manually; when invoked from Cursor commit hooks, prefer log-and-exit-0 on QuestLog failures so git is never blocked.
+- Do not open SQLite with different PRAGMAs than core. Do not POST to HTTP for ingest (CLI must work with the server down).
+- `remind`: always useful copy; if API healthcheck fails, tell the user to start the stack (`pnpm dev` or equivalent).

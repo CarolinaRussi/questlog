@@ -1,0 +1,14 @@
+{
+  "name": "@questlog/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.log('@questlog/web scaffold — Vite arrives in slice 1.10')\"",
+    "build": "node -e \"console.log('@questlog/web build placeholder')\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

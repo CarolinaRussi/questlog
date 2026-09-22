@@ -1,0 +1,40 @@
+---
+description: Nomenclatura legível de variáveis (evitar letras soltas)
+alwaysApply: true
+---
+
+# Nomenclatura de variáveis
+
+Nomes devem ser **legíveis por humanos** ao ler o código por cima. Prefira o domínio (`quest`, `profile`, `commit`, `ticket`) a abreviações opacas.
+
+## Evitar
+
+- Variáveis ou parâmetros de **uma letra** (`m`, `r`, `u`, `b`, `c`, `v`, `e`), salvo exceções abaixo.
+- Abreviações crípticas de 2 letras quando o nome completo cabe (`qt` → `quest`, `pf` → `profile`).
+- Reutilizar a mesma letra curta para conceitos diferentes no mesmo arquivo.
+
+## Preferir
+
+```typescript
+// ❌
+const q = await findQuest(id);
+const r = await ingest(q);
+quests.map((q) => q.id);
+
+// ✅
+const quest = await findQuest(id);
+const ingestResult = await ingest(quest);
+quests.map((quest) => quest.id);
+```
+
+Callbacks TypeORM e `.map` / `.filter`: use o nome da entidade (`questRow`, `profileRow`, `commitRow`).
+
+## Exceções aceitáveis
+
+- Índice de loop simples: `i`, `j` (ex.: `for (let i = 0; …)`).
+- Coordenadas ou matemática curta e local: `x`, `y`, `n` só se o contexto for óbvio e o bloco for curto.
+- Catch: preferir `error` (não `e`).
+
+## Ao escrever código novo
+
+Aplicar esta regra **no código que criar ou alterar**. Não renomear em massa arquivos fora do escopo da tarefa só por estética — a menos que a pessoa peça.

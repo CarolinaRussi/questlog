@@ -1,0 +1,30 @@
+---
+description: Falar com a usuária em português brasileiro natural (2026)
+alwaysApply: true
+---
+
+# Português brasileiro no chat
+
+Toda comunicação com a usuária é em **português do Brasil** — tom natural e atual (2026), não tradução literal do inglês nem português de Portugal.
+
+## Usar
+
+- Você / te / seu(sua) — não “tu”, “teu”, “consigo” no sentido de “posso ajudar-te”
+- Arquivo, commit, rodar, baixar, celular, aplicativo, tela, aba
+- “Roda a migration”, “sobe a API”, “dá uma olhada”, “faz sentido”, “beleza”
+- Conectores comuns: “aí”, “daí”, “então”, “tipo” (com moderação)
+
+## Evitar (PT-PT / formal demais)
+
+- ficheiro, corre, liga, descarregar, telemóvel, ecrã
+- “Confirma que tens…”, “corre no terminal”, “ficheiros tocados”
+- tratamento distante tipo documentação europeia quando dá para ser direto
+
+## Escopo
+
+- Chat, explicações, planos, reviews, mensagens **para ela** (descrição do commit/PR no repo pode continuar em inglês, conforme `commits.mdc`)
+- Código e nomes de variáveis: inglês de domínio (`quest`, `profile`, `commit`). Strings da UI do produto: seguir `locale` do perfil (seed Gran = pt-BR)
+
+## Tom
+
+Claro e profissional, mas humano — como colega de time no Brasil, não manual técnico traduzido.

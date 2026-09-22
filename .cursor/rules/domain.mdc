@@ -1,0 +1,21 @@
+---
+description: Domain invariants for quests, profiles, tickets, and commit matching
+alwaysApply: true
+---
+
+# Domain invariants
+
+- **Quest** is the unit of truth (“what I’m touching now”), not the external ticket/card.
+- **Epic ≠ quest.** Epic is optional context (`profile.has_epic`). Default `epic_scope` = `partial` (picking a task does not mean owning the whole epic).
+- **Profile** owns reality: monitored `repos[]`, `ticket.pattern`, `ticket.base_url`, `ticket.prefix_label`, `has_epic`, `branch_pattern`, `commit.hint`, `locale`, `active_quest_id`.
+- Tickets on a quest are generic `ticket_ids: string[]` (+ optional `epic_id`). Format/validation comes from the profile regex — not hardcoded prefixes in core.
+- Pausing a quest requires confirming **`falta`** (what’s left). That text is the resume context.
+- Commit → quest resolution order (do not reorder casually):
+  1. message ticket IDs ∩ quest `ticket_ids`
+  2. branch match via `branch_pattern`
+  3. `active_quest_id`
+  4. **Inbox** — never drop a commit silently
+- Cursor hooks / CLI ingest are **fail-open**: never block `git commit` on QuestLog errors.
+- SQLite writes go **only** through `packages/core` (WAL + short transactions). CLI and HTTP are thin adapters.
+- MVP: one active profile row; multi-profile is phase 2 (schema may already be `profiles`).
+- Do not mirror full Jira/Linear backlogs or card descriptions into the board.

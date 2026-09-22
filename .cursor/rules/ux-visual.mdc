@@ -1,0 +1,16 @@
+---
+description: UX and visual constraints for the QuestLog board UI
+globs: apps/web/**/*.{tsx,css}
+alwaysApply: false
+---
+
+# UX / visual
+
+- App personality: focused work board — calm, clear, personal. Not a generic admin dashboard.
+- Themes: light + dark via tokens; default light (unless the user later asks otherwise).
+- **UX first:** interactive surfaces feel intentional. Overlays, sheets, and destructive confirms use soft enter/exit (~200–250ms). While data loads, show skeletons — never flash empty zeros or “sem dados”.
+- First useful screen: quests that matter now + **Falta** when paused — not stats strips, promo chips, or dense KPI rows.
+- Cards are for interactive quest surfaces, not decorative marketing blocks.
+- Ticket links use profile `base_url` + id; label comes from `prefix_label` (e.g. “Jira”), not hardcoded product names in components.
+- Make **ativa / pausada / feita / Inbox** obvious; do not bury status in identical chrome.
+- Avoid AI-default looks: purple-on-white glow, generic Inter dashboards, cream+terracotta cliché — pick a clear direction and stick to CSS variables.

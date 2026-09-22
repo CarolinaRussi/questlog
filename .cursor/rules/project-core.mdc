@@ -1,0 +1,15 @@
+---
+description: Core QuestLog project context and delivery workflow
+alwaysApply: true
+---
+
+# QuestLog core
+
+- Working title: **QuestLog** (slug `questlog`).
+- Read `questlog-PLAN.md` (or `docs/PLAN.md` when moved) before large changes. Locked decisions there win over improvisation.
+- Deliver **one plan phase slice** at a time; stop for user review/commit unless asked to continue.
+- Product is **local-first**: SQLite on the machine, HTTP API on `127.0.0.1`, CLI for Cursor hooks. No cloud/Vercel as runtime. Infra cost = R$ 0.
+- **Profile** is configurable (repos, ticket pattern, base URL, `has_epic`). Never hardcode HESEC, Gran repos, or company URLs in `packages/core`.
+- Company/work reality lives in **seeds/examples** and the user’s DB — not in product code.
+- Never commit `*.db`, real repo paths with secrets, or work-timeline data. Use `getDataDir()` / `QUESTLOG_DATA_DIR`.
+- Architecture locked: `packages/core` + `apps/server` (HTTP) + `apps/web` + `apps/cli`. Do not collapse CLI ingest into “HTTP-only” or replace SQLite with ad-hoc JSON.

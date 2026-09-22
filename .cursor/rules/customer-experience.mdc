@@ -1,0 +1,35 @@
+---
+description: Customer experience — feedback, motion, forms, and loading for user-facing changes
+alwaysApply: true
+---
+
+# Customer experience (QuestLog)
+
+Every user-facing change must feel **calm, clear, and finished** — not a raw CRUD screen. Prefer shared UI primitives once they exist over one-off hacks.
+
+## Before shipping UI
+
+Ask: can the person tell what happened, what’s loading, and what to do next — without knowing about the network?
+
+## Must-haves
+
+1. **Overlays** — Enter/exit motion. Never mount/unmount a modal with a hard cut. Keep mounted until exit finishes.
+2. **Feedback** — Success and errors use one shared banner/toast style. No bare error lines on a blank background.
+3. **Writes vs refreshes** — Mutation `isPending` ends when the **write** finishes. Do not `await` `invalidateQueries` inside `onSuccess` (blocks the next action). Upsert cache when you can; refetch in the background.
+4. **Loading** — First load: skeletons. Refetch with existing data: dim or quiet “updating” cue — never flash an empty list as if there were no quests.
+5. **Pause flow** — Pausing must surface **`falta`** clearly; do not allow a silent pause that drops context.
+6. **Wizard / settings** — First-run and profile edits should make repos + ticket pattern understandable without reading the PLAN.
+
+## Prefer
+
+- One shared sheet/dialog, one shared feedback pattern, tokens from CSS variables
+- Soft motion for presence — not noise
+- Disabled + spinner only on the control that is actually waiting
+
+## Avoid
+
+- `window.confirm` / `alert`
+- Closing a dialog with no animation
+- Leaving the primary CTA stuck on “saving” while background GETs run
+- Empty states while `isLoading` / no data yet
+- Inventing a new toast/modal system per feature

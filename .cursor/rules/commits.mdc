@@ -1,0 +1,23 @@
+---
+description: Conventional commit message standards for QuestLog
+alwaysApply: true
+---
+
+# Commits
+
+- English Conventional Commits.
+- Types: `feat`, `fix`, `docs`, `chore`, `refactor`.
+- Prefer scopes: `web`, `server`, `cli`, `core`.
+- Other scopes only when it does not fit those (`repo`, `ci`, or omit scope for pure `docs:`).
+
+```text
+feat(core): resolve commit to quest by ticket match
+feat(web): add pause quest sheet with falta field
+feat(cli): add ingest-commit command
+feat(server): expose POST /api/commits
+docs: update PLAN locked decisions
+chore(repo): add pnpm workspace
+```
+
+- Prefer one logical change per commit when the user asks to commit.
+- Do not commit unless the user explicitly asks.

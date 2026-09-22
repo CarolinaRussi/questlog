@@ -1,0 +1,14 @@
+---
+description: Conventions for packages/core — domain, TypeORM, single SQLite writer
+globs: packages/core/**/*
+alwaysApply: false
+---
+
+# `packages/core`
+
+- Own **domain logic**, TypeORM entities/migrations, `getDataDir()`, SQLite init (WAL + busy timeout), and use-cases (`ingestCommit`, `pauseQuest`, etc.).
+- Do **not** import React, Fastify, DOM, or Cursor-hook APIs.
+- CLI and server call into core; they do not open their own DB connections with divergent settings.
+- Keep ticket/repo/company specifics out of core — read them from **Profile**.
+- Prefer framework-agnostic Zod (or similar) schemas for inputs that both server and CLI validate.
+- Export a stable API surface for adapters; avoid leaking TypeORM query builders to apps when a use-case function suffices.

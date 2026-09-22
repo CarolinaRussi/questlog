@@ -1,0 +1,291 @@
+# QuestLog — plano
+
+## Decisões travadas (grilling)
+
+| Tema | Decisão |
+|------|---------|
+| Produto | Local-first; **sem** Vercel/cloud obrigatório; custo infra = R$ 0 |
+| Núcleo vs realidade | Núcleo magro; empresa/ticket/repos vivem em **perfil configurável** |
+| Persistência | **SQLite** (arquivo local), schema + migrations via TypeORM |
+| Arquitetura | `core` + adapters: **HTTP** (UI), **CLI** (hooks) |
+| Stack | Vite + React + TS + Tailwind + TanStack Query \| Fastify + TypeORM (Active Record) \| SQLite |
+| Config | Settings/perfil **na SQLite**; wizard se vazio + seeds de exemplo |
+| Perfis | Tabela `profiles` com **1** ativo no MVP; multi-perfil na fase 2 |
+| Hooks Cursor | CLI → `core` (não depende do server); UI → HTTP; **fail-open** |
+| Concorrência | WAL + transações curtas **só** no `core` |
+| Dados | Diretório do usuário (`getDataDir()`); `QUESTLOG_DATA_DIR` opcional; **nunca** commitar `.db` |
+| Match de commit | ticket → branch → quest ativa → Inbox |
+| Desktop | Fase futura; Electron vs Tauri **adiado**; shell reusa `core` + API |
+| Monorepo | pnpm workspaces: `packages/core`, `apps/server`, `apps/web`, `apps/cli` |
+| Lembrete | `sessionStart` sempre; texto muda se API estiver down |
+
+Critério permanente: **melhor arquitetura**, não o caminho mais fácil.
+
+---
+
+## Visão de produto
+
+QuestLog é um **quadro pessoal de trabalho em andamento**: a unidade de verdade é a **quest** (“o que estou tocando agora”), não o card do Jira/Linear/etc.
+
+- **Você** usa no dia a dia (ex.: realidade Gran via seed/perfil).
+- **Outras pessoas** configuram paths dos repos, regex de ticket, URL base, se há epic — sem fork do produto.
+- **Portfólio**: app local full-stack real (API + SQLite + React), sem vazar dados de empresa.
+
+Instalável (Electron/Tauri) é fase posterior: mesmo `core`, mesma API, outro invólucro.
+
+---
+
+## Conceitos (não misturar)
+
+| Conceito | O que é |
+|----------|---------|
+| **Quest** | Unidade do quadro: título, status, `falta`, repos/branches, tickets |
+| **Profile** | Realidade da pessoa: repos monitorados, padrão de ticket, `has_epic`, locale |
+| **Ticket** | ID externo genérico (`HESEC-6675`, `PROJ-12`, …) — formato vem do perfil |
+| **Epic** | Opcional (`profile.has_epic`); contexto, não é a quest automaticamente |
+| **Branch** | Fio técnico; a quest lista `repo → branch` |
+| **Pendência (`falta`)** | Texto “o que falta” ao pausar — evita perder contexto |
+| **Inbox** | Destino de commits que não casaram com quest |
+
+---
+
+## Perfil configurável (não hardcode Gran)
+
+Campos do perfil (SQLite):
+
+| Campo | Função | Exemplo seed Gran |
+|-------|--------|-------------------|
+| `repos[]` | nome + path absoluto | es-api, es-secretaria, es-campus |
+| `ticket.pattern` | regex para commits/branches | `HESEC-\\d+` |
+| `ticket.prefix_label` | label na UI | `Jira` |
+| `ticket.base_url` | link clicável | `https://…/browse/` |
+| `ticket.has_epic` | liga epic + `epic_scope` | `true` |
+| `branch_pattern` | opcional, inferência | `HESEC-\\d+` |
+| `commit.hint` | ajuda na UI (não enforça) | use `#HESEC-XXXX` |
+| `locale` | labels | `pt-BR` |
+| `active_quest_id` | fallback de match | uuid \| null |
+
+**Seed Gran** e **seed minimal** vivem em `examples/` (JSON → script de seed). Paths do seed Gran são placeholders ou os seus paths locais — **não** são o modelo do produto.
+
+### Contexto Gran (apenas exemplo de perfil)
+
+Útil para você e para o README; o código não assume isso.
+
+- Keys: `HESEC-<número>`; epic = guarda-chuva; pegar tarefa ≠ pegar epic.
+- Repos típicos: `es-api`, `es-secretaria`, `es-campus` (AVA pós fora).
+- Commits: `#HESEC-XXXX` na mensagem; board extrai via `ticket.pattern`.
+- `epic_scope`: `partial` (default) \| `full`.
+
+---
+
+## Arquitetura
+
+```mermaid
+flowchart TB
+  subgraph apps
+    web[apps/web React]
+    server[apps/server Fastify]
+    cli[apps/cli]
+  end
+  core[packages/core]
+  db[(SQLite user data dir)]
+  cursor[Cursor hooks]
+  web -->|HTTP 127.0.0.1| server
+  server --> core
+  cli --> core
+  core --> db
+  cursor -->|sessionStart / after commit| cli
+```
+
+### Monorepo
+
+```
+questlog/
+  packages/core/          # domínio, TypeORM entities, use-cases, getDataDir(), WAL
+  apps/server/            # Fastify: HTTP → core
+  apps/web/               # Vite React Tailwind TanStack Query
+  apps/cli/               # ingest-commit, remind, seed, setup
+  examples/               # gran.profile.json, minimal.profile.json
+  docs/PLAN.md            # este plano
+  cursor/HOOKS.md         # instalação em ~/.cursor
+```
+
+### Regras do `core`
+
+- Único lugar que fala com SQLite / TypeORM.
+- CLI e server são adapters finos.
+- `PRAGMA journal_mode=WAL` + busy timeout + transações curtas.
+- Failures de hook/CLI: **fail-open** (nunca bloqueia `git commit`).
+
+### Onde está o DB
+
+- Default: diretório de dados do usuário (ex. `%APPDATA%/questlog/questlog.db` no Windows).
+- Override: `QUESTLOG_DATA_DIR`.
+- Repo git: só código + `examples/`; `.db` fora do versionamento.
+
+---
+
+## Modelo de dados (essencial)
+
+### Profile
+
+- campos da tabela acima
+- MVP: um registro; fase 2: N perfis + `active_profile_id`
+
+### Quest
+
+- `id`, `titulo`
+- `status`: `ativa` \| `pausada` \| `feita`
+- `ticket_ids`: string[]
+- `epic_id`: string \| null
+- `epic_scope`: `partial` \| `full` (relevante se `has_epic`)
+- `repos`: `{ nome, path, branch }[]`
+- `falta`: string
+- `atualizado_em`
+
+### Commit
+
+- `hash`, `repo`, `quando`, `assunto`, `resumo`, `quest_id` (ou Inbox)
+
+### Resolução quest ← commit
+
+1. IDs na mensagem ∩ `ticket_ids`
+2. Match `branch_pattern` na branch do repo
+3. `active_quest_id`
+4. Inbox (criar/anexar) — não descartar
+
+---
+
+## Fluxo alvo
+
+```mermaid
+flowchart LR
+  openCursor[Abrir Cursor] --> sessionStart[Hook sessionStart]
+  sessionStart --> remind[CLI remind]
+  remind --> board[Web UI]
+  work[Trabalho nos repos] --> commit[git commit]
+  commit --> hook[afterShellExecution]
+  hook --> cliIngest[CLI ingest-commit]
+  cliIngest --> core
+  core --> db[(SQLite)]
+  board --> api[Fastify]
+  api --> core
+```
+
+---
+
+## UX (MVP)
+
+- Wizard na primeira abertura se não houver profile.
+- Lista: ativas / pausadas (+ Inbox).
+- Detalhe: título, tickets linkados (`base_url` + id), repos/branches, **Falta** em destaque, timeline de commits.
+- Ações: nova quest, pausar (exige `falta`), retomar, marcar feita, definir ativa.
+- Settings: editar profile (paths, regex, URL, has_epic).
+- Visual limpo (não dashboard corporativo genérico); UI em português no seed Gran / locale pt-BR.
+
+Dev: `pnpm dev` sobe server + web (porta fixa, ex. `8787`).
+
+---
+
+## Integração Cursor (`~/.cursor`)
+
+1. **`sessionStart`** → `questlog remind`  
+   - Sempre lembra.  
+   - Se API down: orientar `pnpm dev` / status.  
+   - Se up: N ativas/pausadas + URL do board.
+
+2. **`afterShellExecution`** → se `git commit` ok → `questlog ingest-commit`  
+   - Detecta repo (cwd ∈ `profile.repos`)  
+   - Lê `git log -1`  
+   - Extrai tickets via `ticket.pattern`  
+   - Resolve quest (ordem acima)  
+   - Resumo: subject + `--stat` (MVP)  
+   - Fail-open
+
+---
+
+## Fases
+
+### Fase 1 — MVP usável no dia a dia
+
+Entregar **uma fatia por vez**; review + commit antes da próxima.
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **1.1** | Scaffold monorepo pnpm (`core`, `server`, `web`, `cli`), tsconfig base, `.gitignore` (`.db`, `node_modules`, `.env`) | `chore(repo): scaffold pnpm workspace` |
+| **1.2** | `core`: `getDataDir()` + DataSource SQLite + WAL + runner de migrations (smoke) | `feat(core): bootstrap sqlite data dir and wal` |
+| **1.3** | `core`: entities `Profile`, `Quest`, `Commit` + migration inicial | `feat(core): add profile quest commit schema` |
+| **1.4** | `core`: use-cases de profile (get / upsert) | `feat(core): profile get and upsert` |
+| **1.5** | `core`: quest CRUD + pausar com `falta` + status | `feat(core): quest crud and pause with falta` |
+| **1.6** | `core`: `ingestCommit` (ticket → branch → ativa → Inbox) + check mínimo | `feat(core): resolve and ingest commits` |
+| **1.7** | `examples/gran` + `examples/minimal` + CLI/core `seed` | `feat(cli): seed gran and minimal profiles` |
+| **1.8** | `apps/server`: health + profile + quests + commits (adapter fino) | `feat(server): expose local http api` |
+| **1.9** | `apps/cli`: `ingest-commit` + `remind` (fail-open; remind com healthcheck) | `feat(cli): ingest-commit and remind` |
+| **1.10** | `apps/web` scaffold Vite/React/Tailwind/Query + fala com health | `feat(web): scaffold vite app with api health` |
+| **1.11** | Web: wizard 1ª abertura + settings de profile | `feat(web): profile wizard and settings` |
+| **1.12** | Web: board (lista/detalhe/falta/ações) | `feat(web): quest board list and detail` |
+| **1.13** | `cursor/HOOKS.md` + README “como abrir de manhã” | `docs: add hooks guide and morning readme` |
+
+Critério de pronto da Fase 1 = fatias **1.1–1.13** verdes + critérios de sucesso do MVP abaixo.
+
+### Fase 2 — Atrito zero + multi-perfil
+
+- UI de troca de perfil
+- Inferência de branch polida
+- Pausar com `falta` obrigatório polido
+- Live update (polling em `atualizado_em` ou SSE)
+- Opcional: fila local se ingest falhar (hoje: fail-open e segue)
+
+### Fase 3 — Ticket read-only (opcional)
+
+- API externa (Jira/etc.) só título/status das keys do perfil
+- Nunca espelhar descrição completa do card
+
+### Fase 4 — App instalável
+
+- Shell desktop reusando `core` + API local
+- Escolher Electron vs Tauri na hora (critério: peso vs pack)
+- Mesmo `getDataDir()` / SQLite
+
+---
+
+## Critérios de sucesso do MVP
+
+- Abrir o Cursor e ser lembrada do board (com mensagem útil se a API estiver down)
+- Após commit num repo do perfil, a timeline atualiza **via CLI** mesmo com a UI fechada
+- Ao pausar, `falta` preenchido permite retomar sem depender de branch/chat
+- Outra pessoa consegue: clonar → seed/wizard → apontar paths → usar
+- Repo público sem `.db` nem paths/secrets de empresa
+
+---
+
+## Fora de escopo (de propósito)
+
+- Hosting cloud / Vercel como runtime do produto
+- Espelhar backlog completo de Jira
+- Substituir Spec Kit / `tasks.md` de features
+- Docker obrigatório para usar o app
+- Hardcode HESEC / repos Gran no `core`
+- Código do QuestLog dentro dos repos de produto da empresa
+- Escolher Electron vs Tauri no MVP
+
+---
+
+## Riscos e mitigações
+
+| Risco | Mitigação |
+|-------|-----------|
+| Esquecer de abrir | `sessionStart` + URL; remind distingue API up/down |
+| Server off no commit | Ingest via CLI → `core` (não depende do HTTP) |
+| Hook quebra commit | Fail-open |
+| Classificar commit na quest errada | Match ticket/branch antes de `active_quest_id` |
+| Confundir quest com epic | `has_epic` + `epic_scope` default `partial` + copy clara |
+| Vazar dados no GitHub | DB no user dir; examples sem segredos |
+| Dois escritores no SQLite | WAL + escrita só no `core` |
+| Overbuild desktop cedo | Fase 4; contrato HTTP/`core` já estável |
+
+---
+
+## Prompt sugerido para implementar
+
+> Implementar o QuestLog conforme `questlog-PLAN.md`: monorepo pnpm (`core`, `server`, `web`, `cli`), SQLite no data dir do usuário, perfil configurável na DB, wizard + seeds `examples/gran` e `examples/minimal`, Fastify + TypeORM, React/Vite/Tailwind/TanStack Query, ingest de commit via CLI (hooks Cursor), remind no `sessionStart`, fail-open, sem cloud, sem hardcode HESEC no core.

@@ -1,0 +1,21 @@
+---
+description: Fastify API layering — thin adapter over packages/core
+globs: apps/server/**/*
+alwaysApply: false
+---
+
+# Backend (`apps/server`)
+
+- This app is an **HTTP adapter**: `routes → controllers → core use-cases`.
+- Do **not** put business rules or TypeORM writes here — that lives in `packages/core`.
+- Validate at the HTTP boundary (e.g. Zod), then call core.
+- Bind to **`127.0.0.1`** by default (local-first). No auth required in MVP.
+- Name files by domain: `quest.controller.ts`, `profile.routes.ts`.
+- Schema changes go through **core** migrations, not ad-hoc SQL in routes.
+
+```ts
+// ✅ controller calls core
+await ingestCommit(input)
+
+// ❌ fat route with SQL / match logic / entity saves
+```

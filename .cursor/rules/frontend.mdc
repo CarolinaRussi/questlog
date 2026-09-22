@@ -1,0 +1,17 @@
+---
+description: React feature structure, TanStack Query, and Tailwind for QuestLog web
+globs: apps/web/**/*
+alwaysApply: false
+---
+
+# Frontend (`apps/web`)
+
+- Structure: `features/*` + `shared/ui` + `shared/lib`.
+- Server state: **TanStack Query**. UI-only state stays light (nav, wizard step, which quest is expanded).
+- Styling: Tailwind + CSS variables for theme tokens. Prefer an expressive font via the design — avoid defaulting to Inter/Roboto/system stacks for brand surfaces.
+- Board UX: quest list (ativas / pausadas / Inbox) + detail with **Falta** emphasized — not a corporate multi-widget dashboard.
+- Talk to the local API only (`server`); never import TypeORM or open SQLite from the web app.
+- Overlays: soft enter/exit; do not use `window.confirm` / `alert`. Prefer shared sheet/dialog primitives once they exist.
+- Feedback: one shared success/error pattern — not bare red text on a blank background.
+- Loading: never flash empty zeros / “no data” while the first fetch is in flight. Use skeletons. Empty states only after load finishes with zero items.
+- Writes: do not `await` query invalidations in mutation `onSuccess` — see `customer-experience.mdc`.
