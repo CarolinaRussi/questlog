@@ -1,0 +1,13 @@
+{
+  "name": "minimal",
+  "repos": [
+    { "nome": "my-app", "path": "~/projetos/my-app" }
+  ],
+  "ticketPattern": "[A-Z]+-\\d+",
+  "ticketPrefixLabel": "Ticket",
+  "ticketBaseUrl": "",
+  "ticketHasEpic": false,
+  "branchPattern": "[A-Z]+-\\d+",
+  "commitHint": "include ticket id in commit messages",
+  "locale": "en"
+}

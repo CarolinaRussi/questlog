@@ -52,4 +52,6 @@ export {
 } from "./use-cases/commit.schemas.js";
 export { extractTicketIds, questHasAnyTicket } from "./use-cases/ticket-match.js";
 
+export { seedProfile } from "./use-cases/seed.js";
+
 export const QUESTLOG_CORE_VERSION = "0.0.0";

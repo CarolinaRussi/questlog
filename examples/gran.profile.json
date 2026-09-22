@@ -1,0 +1,15 @@
+{
+  "name": "gran",
+  "repos": [
+    { "nome": "es-api", "path": "~/projetos/es-api" },
+    { "nome": "es-secretaria", "path": "~/projetos/es-secretaria" },
+    { "nome": "es-campus", "path": "~/projetos/es-campus" }
+  ],
+  "ticketPattern": "HESEC-\\d+",
+  "ticketPrefixLabel": "Jira",
+  "ticketBaseUrl": "https://example.atlassian.net/browse/",
+  "ticketHasEpic": true,
+  "branchPattern": "HESEC-\\d+",
+  "commitHint": "use #HESEC-XXXX na mensagem do commit",
+  "locale": "pt-BR"
+}
