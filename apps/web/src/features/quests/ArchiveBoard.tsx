@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import {
   fetchArchive,
-  fetchCommits,
   promoteEpic,
   promoteQuest,
   type Profile,
@@ -120,12 +119,6 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
         ungrouped.find((quest) => quest.id === selectedQuestId) ??
         null)
       : null;
-
-  const commitsQuery = useQuery({
-    queryKey: ["commits", selectedQuest?.id],
-    queryFn: () => fetchCommits({ questId: selectedQuest!.id }),
-    enabled: Boolean(selectedQuest),
-  });
 
   return (
     <div className="space-y-6">
@@ -420,7 +413,6 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
                   <ArchiveQuestActions
                     quest={selectedQuest}
                     busy={promoteMutation.isPending}
-                    commits={commitsQuery.data ?? []}
                     onWatch={() =>
                       promoteMutation.mutate({
                         questId: selectedQuest.id,
@@ -551,14 +543,12 @@ function ArchiveQuestRow({
 
 function ArchiveQuestActions({
   busy,
-  commits,
   onWatch,
   onResume,
   onPause,
 }: {
   quest: Quest;
   busy: boolean;
-  commits: { id: string; assunto: string }[];
   onWatch: () => void;
   onResume: () => void;
   onPause: () => void;
@@ -594,20 +584,6 @@ function ArchiveQuestActions({
           Pausar + falta
         </button>
       </div>
-      {commits.length > 0 ? (
-        <ul className="space-y-1 text-sm" style={{ color: "var(--ql-muted)" }}>
-          {commits.slice(0, 8).map((commit) => (
-            <li key={commit.id}>
-              {commit.assunto.slice(0, 100)}
-              {commit.assunto.length > 100 ? "…" : ""}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-          Sem commits nesta quest ainda.
-        </p>
-      )}
     </div>
   );
 }

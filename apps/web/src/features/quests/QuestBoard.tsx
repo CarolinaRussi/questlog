@@ -222,12 +222,6 @@ export function QuestBoard({
       ? findQuest(home, surface.questId)
       : null;
 
-  const commitsQuery = useQuery({
-    queryKey: ["commits", selectedQuest?.id],
-    queryFn: () => fetchCommits({ questId: selectedQuest!.id }),
-    enabled: Boolean(selectedQuest),
-  });
-
   const sections = useMemo(() => {
     if (!home) {
       return {
@@ -534,7 +528,6 @@ export function QuestBoard({
                 <QuestActionsBlock
                   quest={selectedQuest}
                   busy={actionMutation.isPending}
-                  commits={commitsQuery.data ?? []}
                   onPause={() =>
                     setSurface({ kind: "pause", quest: selectedQuest })
                   }
@@ -569,7 +562,6 @@ export function QuestBoard({
             quest={selectedQuest}
             profile={profile}
             busy={actionMutation.isPending}
-            commits={commitsQuery.data ?? []}
             onPause={() =>
               setSurface({ kind: "pause", quest: selectedQuest })
             }
@@ -775,7 +767,6 @@ function QuestDetailPanel({
   quest,
   profile,
   busy,
-  commits,
   onPause,
   onResume,
   onFinish,
@@ -783,7 +774,6 @@ function QuestDetailPanel({
   quest: Quest;
   profile: Profile;
   busy: boolean;
-  commits: { id: string; assunto: string }[];
   onPause: () => void;
   onResume: () => void;
   onFinish: () => void;
@@ -843,7 +833,6 @@ function QuestDetailPanel({
       <QuestActionsBlock
         quest={quest}
         busy={busy}
-        commits={commits}
         onPause={onPause}
         onResume={onResume}
         onFinish={onFinish}
@@ -931,14 +920,12 @@ function QuestRow({
 function QuestActionsBlock({
   quest,
   busy,
-  commits,
   onPause,
   onResume,
   onFinish,
 }: {
   quest: Quest;
   busy: boolean;
-  commits: { id: string; assunto: string }[];
   onPause: () => void;
   onResume: () => void;
   onFinish: () => void;
@@ -979,20 +966,6 @@ function QuestActionsBlock({
           </button>
         ) : null}
       </div>
-      {commits.length > 0 ? (
-        <ul className="space-y-1 text-sm" style={{ color: "var(--ql-muted)" }}>
-          {commits.slice(0, 8).map((commit) => (
-            <li key={commit.id}>
-              {commit.assunto.slice(0, 100)}
-              {commit.assunto.length > 100 ? "…" : ""}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
-          Sem commits nesta quest ainda.
-        </p>
-      )}
     </div>
   );
 }
