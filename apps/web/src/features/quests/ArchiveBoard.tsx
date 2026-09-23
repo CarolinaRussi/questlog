@@ -414,6 +414,7 @@ export function ArchiveBoard({ profile, onBack }: ArchiveBoardProps) {
               profile={profile}
               selectedQuestId={selectedQuestId}
               onSelectQuest={setSelectedQuestId}
+              notesFirst
               questActions={
                 selectedQuest ? (
                   <ArchiveQuestActions
