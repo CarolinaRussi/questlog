@@ -12,7 +12,7 @@ import { tryReadJiraCredentials } from "../lib/epic-titles.js";
 export class JiraCredentialsMissingError extends Error {
   constructor() {
     super(
-      "Jira credentials missing. Set JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN.",
+      "Jira credentials missing. Configure Jira in Settings or set JIRA_BASE_URL / JIRA_EMAIL / JIRA_API_TOKEN.",
     );
     this.name = "JiraCredentialsMissingError";
   }

@@ -138,9 +138,12 @@ export {
   getLocalSecrets,
   getLocalSecretsPublic,
   upsertLocalSecrets,
+  resolveJiraCredentials,
+  hydrateJiraSecretsFromEnv,
   getSecretsPath,
   type LocalSecrets,
   type LocalSecretsPublic,
+  type JiraCredentials,
 } from "./use-cases/secrets.js";
 
 export const QUESTLOG_CORE_VERSION = "0.0.0";

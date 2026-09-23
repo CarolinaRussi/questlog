@@ -3,20 +3,11 @@ import {
   fetchJiraIssueContext,
   fetchJiraTicketSnapshots,
   resolveEpicTitles,
+  resolveJiraCredentials,
 } from "@questlog/core";
 
-export function tryReadJiraCredentials(): {
-  baseUrl: string;
-  email: string;
-  apiToken: string;
-} | null {
-  const baseUrl = process.env.JIRA_BASE_URL?.trim();
-  const email = process.env.JIRA_EMAIL?.trim();
-  const apiToken = process.env.JIRA_API_TOKEN?.trim();
-  if (!baseUrl || !email || !apiToken) {
-    return null;
-  }
-  return { baseUrl, email, apiToken };
+export function tryReadJiraCredentials() {
+  return resolveJiraCredentials();
 }
 
 /**

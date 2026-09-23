@@ -4,6 +4,7 @@ import {
   fetchJiraTicketSnapshots,
   initDb,
   listLinkedTicketKeys,
+  resolveJiraCredentials,
   ticketSnapshotsInputSchema,
 } from "@questlog/core";
 
@@ -11,22 +12,14 @@ export type RefreshJiraCliOptions = {
   filePath?: string;
 };
 
-function readJiraCredentialsFromEnv(): {
-  baseUrl: string;
-  email: string;
-  apiToken: string;
-} {
-  const baseUrl = process.env.JIRA_BASE_URL?.trim();
-  const email = process.env.JIRA_EMAIL?.trim();
-  const apiToken = process.env.JIRA_API_TOKEN?.trim();
-
-  if (!baseUrl || !email || !apiToken) {
+function readJiraCredentials() {
+  const credentials = resolveJiraCredentials();
+  if (!credentials) {
     throw new Error(
-      "Set JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN (see .env.example / README)",
+      "Configure Jira in Settings or set JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN",
     );
   }
-
-  return { baseUrl, email, apiToken };
+  return credentials;
 }
 
 export async function runRefreshJiraCommand(
@@ -46,7 +39,7 @@ export async function runRefreshJiraCommand(
       return;
     }
 
-    const credentials = readJiraCredentialsFromEnv();
+    const credentials = readJiraCredentials();
     const fetched = await fetchJiraTicketSnapshots(credentials, keys);
     console.log(`refresh-jira: fetched ${fetched.length} issues from Jira`);
     issues = fetched;

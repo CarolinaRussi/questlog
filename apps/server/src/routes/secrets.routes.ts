@@ -7,6 +7,9 @@ import {
 
 const upsertSecretsBodySchema = z.object({
   geminiApiKey: z.string().nullable().optional(),
+  jiraBaseUrl: z.string().nullable().optional(),
+  jiraEmail: z.string().nullable().optional(),
+  jiraApiToken: z.string().nullable().optional(),
 });
 
 export async function registerSecretsRoutes(

@@ -1,7 +1,7 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
-import { QUESTLOG_CORE_VERSION } from "@questlog/core";
+import { hydrateJiraSecretsFromEnv, QUESTLOG_CORE_VERSION } from "@questlog/core";
 import { runImportJiraCommand } from "./commands/import-jira.js";
 import { runIngestCommitCommand } from "./commands/ingest-commit.js";
 import { runRefreshJiraCommand } from "./commands/refresh-jira.js";
@@ -11,6 +11,7 @@ import { runSeedCommand } from "./commands/seed.js";
 loadEnv({
   path: join(dirname(fileURLToPath(import.meta.url)), "../../../.env"),
 });
+hydrateJiraSecretsFromEnv();
 
 function argvCommands(): string[] {
   return process.argv.slice(2).filter((arg) => arg !== "--");

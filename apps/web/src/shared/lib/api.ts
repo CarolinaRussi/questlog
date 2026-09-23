@@ -231,6 +231,9 @@ export async function refreshTickets(): Promise<RefreshTicketsResult> {
 
 export type LocalSecretsPublic = {
   geminiConfigured: boolean;
+  jiraConfigured: boolean;
+  jiraBaseUrl: string | null;
+  jiraEmail: string | null;
 };
 
 export async function fetchSecrets(): Promise<LocalSecretsPublic> {
@@ -243,6 +246,9 @@ export async function fetchSecrets(): Promise<LocalSecretsPublic> {
 
 export async function saveSecrets(body: {
   geminiApiKey?: string | null;
+  jiraBaseUrl?: string | null;
+  jiraEmail?: string | null;
+  jiraApiToken?: string | null;
 }): Promise<LocalSecretsPublic> {
   const response = await fetch("/api/secrets", {
     method: "PUT",

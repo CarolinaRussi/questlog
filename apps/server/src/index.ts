@@ -1,13 +1,14 @@
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
-import { initDb } from "@questlog/core";
+import { getDataDir, hydrateJiraSecretsFromEnv, initDb } from "@questlog/core";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 
-loadEnv({
-  path: join(dirname(fileURLToPath(import.meta.url)), "../../../.env"),
-});
+const here = dirname(fileURLToPath(import.meta.url));
+loadEnv({ path: join(getDataDir(), ".env") });
+loadEnv({ path: join(here, "../../../.env") });
+hydrateJiraSecretsFromEnv();
 
 const config = loadConfig();
 await initDb();

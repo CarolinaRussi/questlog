@@ -5,6 +5,7 @@ import {
   type UpsertProfileBody,
 } from "../../shared/lib/api";
 import { GeminiSettings } from "./GeminiSettings";
+import { JiraSettings } from "./JiraSettings";
 import { ProfileForm } from "./ProfileForm";
 
 type ProfileSettingsProps = {
@@ -32,13 +33,15 @@ export function ProfileSettings({ profile, onBack }: ProfileSettingsProps) {
             Settings
           </h2>
           <p style={{ color: "var(--ql-muted)" }}>
-            Paths, regex de ticket, Gemini e preferências do perfil ativo.
+            Paths, regex de ticket, Jira, Gemini e preferências do perfil ativo.
           </p>
         </div>
         <button type="button" className="text-sm font-semibold" onClick={onBack}>
           Voltar
         </button>
       </div>
+
+      <JiraSettings />
 
       <GeminiSettings />
 
