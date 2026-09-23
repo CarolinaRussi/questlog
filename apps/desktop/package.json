@@ -8,6 +8,8 @@
     "start": "electron .",
     "prepare-pack": "node scripts/prepare-pack.mjs",
     "pack:win": "node scripts/prepare-pack.mjs && electron-builder --win portable dir --publish never",
+    "startup": "node scripts/install-startup.mjs",
+    "startup:remove": "node scripts/install-startup.mjs --remove",
     "typecheck": "node -e \"process.exit(0)\""
   },
   "devDependencies": {

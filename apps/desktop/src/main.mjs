@@ -181,19 +181,39 @@ function stopServer() {
   child.kill("SIGTERM");
 }
 
+function focusMainWindow() {
+  if (!mainWindow) {
+    return;
+  }
+  if (mainWindow.isMinimized()) {
+    mainWindow.restore();
+  }
+  mainWindow.show();
+  mainWindow.focus();
+}
+
 async function boot() {
   startServer();
   await waitForHealth();
   createWindow();
 }
 
-app.whenReady().then(() => {
-  void boot().catch((error) => {
-    console.error(error);
-    stopServer();
-    app.exit(1);
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    focusMainWindow();
   });
-});
+
+  app.whenReady().then(() => {
+    void boot().catch((error) => {
+      console.error(error);
+      stopServer();
+      app.exit(1);
+    });
+  });
+}
 
 app.on("before-quit", () => {
   stopServer();

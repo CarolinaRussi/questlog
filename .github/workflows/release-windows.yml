@@ -1,0 +1,27 @@
+name: release-windows
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  pack:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm setup
+      - run: pnpm desktop:pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: QuestLog-windows
+          path: |
+            apps/desktop/release/QuestLog.exe
+            apps/desktop/release/win-unpacked/QuestLog.exe

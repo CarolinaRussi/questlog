@@ -54,16 +54,24 @@ Reinicie o Cursor.
 
 ### `sessionStart` → remind
 
+Roda ao **abrir uma conversa nova** no Agent (não ao abrir a pasta).  
+O texto vai pro contexto do agente — **não** é toast/popup pra você.
+
 - lista ativas/pausadas
 - testa `http://127.0.0.1:8787/api/health`
 - se a API estiver down, pede para subir o server (`pnpm start`)
 
+Lembrete de manhã = abrir o app no login do Windows (`pnpm desktop:startup`), não este hook.
+
 ### `afterShellExecution` → ingest-commit
 
-Quando o comando parece um **`git commit`** bem-sucedido:
+Quando o comando no Cursor parece um **`git commit`** bem-sucedido:
 
 1. Usa o `cwd` do evento (repo do commit)
 2. Roda `pnpm --filter @questlog/cli ingest-commit` nesse diretório
+
+**Silencioso** (fail-open): o git commit não quebra e o Cursor não mostra aviso.  
+Confira no board (timeline da quest ou Inbox).
 
 ### Fail-open
 
