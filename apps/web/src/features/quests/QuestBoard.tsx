@@ -723,14 +723,7 @@ function HomeBucket({
                     <span className="font-semibold">Falta: </span>
                     {faltaLine}
                   </p>
-                ) : (
-                  <p
-                    className="mt-3 text-sm"
-                    style={{ color: "var(--ql-muted)" }}
-                  >
-                    Sem falta registrada ainda
-                  </p>
-                )}
+                ) : null}
               </button>
             );
           })}
