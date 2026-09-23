@@ -264,6 +264,8 @@ Entregar **uma fatia por vez**; review + commit antes da próxima.
 
 Critério de pronto = **3.1–3.5** verdes. Sync contínuo / webhooks = fora.
 
+**Depois da Fase 3:** o botão **Status Jira** (live REST, sem `--file`) cria quests só para issues abertas atribuídas à conta Jira (`assignee = currentUser()`, sem Done/Epic). O épico entra como contexto das *suas* tarefas — não importa o card do time no mesmo épico. Refresh remove do quadro **e do arquivo** tickets que não estão atribuídas a ela (incl. sem responsável); mantém as Done que são dela. `applyTicketSnapshots` em si continua sem criar.
+
 ### Fase 5 — Épico + resumo inteligente (Gemini, chave do usuário)
 
 **Não** é clone do Jira. Board continua sendo quests; épico é contexto.
