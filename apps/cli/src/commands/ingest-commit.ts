@@ -1,7 +1,11 @@
 import {
+  extractTicketIds,
+  extractTicketsFromBranch,
   getProfile,
+  importAssignedTicketsIfMissing,
   ingestCommit,
   initDb,
+  resolveJiraCredentials,
   type IngestCommitInput,
 } from "@questlog/core";
 import { readLatestCommit } from "../lib/git.js";
@@ -59,6 +63,31 @@ export async function runIngestCommitCommand(
     };
 
     try {
+      const credentials = resolveJiraCredentials();
+      if (credentials) {
+        const fromMessage = extractTicketIds(
+          [commitInfo.assunto, commitInfo.body].filter(Boolean).join("\n"),
+          profile.ticketPattern,
+        );
+        const fromBranch = extractTicketsFromBranch(
+          commitInfo.branch,
+          profile.branchPattern ?? profile.ticketPattern,
+        );
+        try {
+          const created = await importAssignedTicketsIfMissing(credentials, [
+            ...fromMessage,
+            ...fromBranch,
+          ]);
+          if (created > 0) {
+            console.log(`ingest-commit: created ${created} quest(s) from Jira`);
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          console.error(`ingest-commit: Jira lookup skipped (${message})`);
+        }
+      }
+
       const result = await ingestCommit(payload);
       const target = result.questId ?? "inbox";
       console.log(
