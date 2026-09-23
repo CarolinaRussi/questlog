@@ -9,6 +9,7 @@ import {
   importEpicChildren,
   keysNotInAssigned,
   removeQuestsNotAssignedToMe,
+  unknownTicketKeys,
 } from "./refresh-jira.js";
 
 const tempDir = mkdtempSync(join(tmpdir(), "questlog-refresh-jira-"));
@@ -134,6 +135,10 @@ try {
     keysNotInAssigned(["DEMO-9", "DEMO-6667", "demo-8"], ["DEMO-9"]),
     ["DEMO-6667", "DEMO-8"],
   );
+  assert.deepEqual(unknownTicketKeys(["DEMO-9", "DEMO-6821"], ["DEMO-9"]), [
+    "DEMO-6821",
+  ]);
+  assert.deepEqual(unknownTicketKeys(["demo-9"], ["DEMO-9"]), []);
 
   await dataSource.destroy();
   console.log(

@@ -115,8 +115,10 @@ export {
 export {
   refreshJiraFromApi,
   importEpicChildren,
+  importAssignedTicketsIfMissing,
   removeQuestsNotAssignedToMe,
   keysNotInAssigned,
+  unknownTicketKeys,
   type RefreshJiraResult,
 } from "./use-cases/refresh-jira.js";
 

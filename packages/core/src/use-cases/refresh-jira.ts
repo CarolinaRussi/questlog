@@ -86,6 +86,30 @@ export async function refreshJiraFromApi(
   };
 }
 
+/**
+ * If `ticketKeys` include issues not yet on the board and they are
+ * assigned to the Jira account, create those quests. Used by commit ingest
+ * so a new HESEC does not wait for Status Jira.
+ */
+export async function importAssignedTicketsIfMissing(
+  credentials: JiraRestCredentials,
+  ticketKeys: string[],
+): Promise<number> {
+  const linked = await listLinkedTicketKeys();
+  const unknown = unknownTicketKeys(ticketKeys, linked);
+  if (unknown.length === 0) {
+    return 0;
+  }
+
+  const mine = await fetchJiraIssueKeysAssignedToMe(credentials, unknown);
+  if (mine.length === 0) {
+    return 0;
+  }
+
+  const snapshots = await fetchJiraTicketSnapshots(credentials, mine);
+  return importEpicChildren(snapshots);
+}
+
 /** Create quests for Jira issues not already on the board. */
 export async function importEpicChildren(
   issues: TicketSnapshot[],
@@ -157,6 +181,23 @@ export async function removeQuestsNotAssignedToMe(
     removed += 1;
   }
   return removed;
+}
+
+/** Ticket ids from a commit that are not already linked to any quest. */
+export function unknownTicketKeys(
+  fromCommit: string[],
+  linkedKeys: string[],
+): string[] {
+  const known = new Set(
+    linkedKeys.map((key) => key.trim().toUpperCase()).filter(Boolean),
+  );
+  return [
+    ...new Set(
+      fromCommit
+        .map((key) => key.trim().toUpperCase())
+        .filter((key) => key && !known.has(key)),
+    ),
+  ];
 }
 
 /** Linked tickets that are not in the assigned-to-me set (includes unassigned). */
