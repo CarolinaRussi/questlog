@@ -15,7 +15,8 @@
     "import-jira": "tsx src/index.ts import-jira",
     "refresh-jira": "tsx src/index.ts refresh-jira",
     "ingest-commit": "tsx src/index.ts ingest-commit",
-    "remind": "tsx src/index.ts remind"
+    "remind": "tsx src/index.ts remind",
+    "check:paths": "tsx src/lib/paths.check.ts"
   },
   "dependencies": {
     "@questlog/core": "workspace:*",

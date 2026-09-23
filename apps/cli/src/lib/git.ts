@@ -7,11 +7,15 @@ async function git(
   cwd: string,
   args: string[],
 ): Promise<string> {
-  const { stdout } = await execFileAsync("git", args, {
-    cwd,
-    encoding: "utf8",
-    windowsHide: true,
-  });
+  const { stdout } = await execFileAsync(
+    "git",
+    ["-c", "safe.directory=*", ...args],
+    {
+      cwd,
+      encoding: "utf8",
+      windowsHide: true,
+    },
+  );
   return stdout.trim();
 }
 
