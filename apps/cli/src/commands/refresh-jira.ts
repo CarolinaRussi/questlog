@@ -1,9 +1,8 @@
 import { readFile } from "node:fs/promises";
 import {
   applyTicketSnapshots,
-  fetchJiraTicketSnapshots,
   initDb,
-  listLinkedTicketKeys,
+  refreshJiraFromApi,
   resolveJiraCredentials,
   ticketSnapshotsInputSchema,
 } from "@questlog/core";
@@ -27,31 +26,22 @@ export async function runRefreshJiraCommand(
 ): Promise<void> {
   await initDb();
 
-  let issues: unknown;
-
   if (options.filePath) {
     const raw = await readFile(options.filePath, "utf8");
-    issues = ticketSnapshotsInputSchema.parse(JSON.parse(raw)).issues;
-  } else {
-    const keys = await listLinkedTicketKeys();
-    if (keys.length === 0) {
-      console.log("refresh-jira: no ticket keys on quests");
+    const issues = ticketSnapshotsInputSchema.parse(JSON.parse(raw)).issues;
+    if (issues.length === 0) {
+      console.log("refresh-jira: nothing to apply");
       return;
     }
-
-    const credentials = readJiraCredentials();
-    const fetched = await fetchJiraTicketSnapshots(credentials, keys);
-    console.log(`refresh-jira: fetched ${fetched.length} issues from Jira`);
-    issues = fetched;
-  }
-
-  if (!Array.isArray(issues) || issues.length === 0) {
-    console.log("refresh-jira: nothing to apply");
+    const result = await applyTicketSnapshots({ issues });
+    console.log(
+      `refresh-jira: updated=${result.updated} epicLinked=${result.epicLinked} markedFeita=${result.markedFeita} unmatched=${result.unmatched}`,
+    );
     return;
   }
 
-  const result = await applyTicketSnapshots({ issues });
+  const result = await refreshJiraFromApi(readJiraCredentials());
   console.log(
-    `refresh-jira: updated=${result.updated} epicLinked=${result.epicLinked} markedFeita=${result.markedFeita} unmatched=${result.unmatched}`,
+    `refresh-jira: fetched=${result.fetched} updated=${result.updated} created=${result.created} removed=${result.removed} epicLinked=${result.epicLinked} markedFeita=${result.markedFeita} unmatched=${result.unmatched} epicTitlesUpdated=${result.epicTitlesUpdated}`,
   );
 }

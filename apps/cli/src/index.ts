@@ -26,7 +26,7 @@ async function main(): Promise<void> {
 Commands:
   seed <gran|minimal>     Upsert profile from examples/*.profile.json
   import-jira <file.json> Import issues export into quests
-  refresh-jira [--file f] Refresh title/status for linked tickets (Jira env or file)
+  refresh-jira [--file f] Refresh linked tickets; live REST creates assigned issues only
   ingest-commit           Read latest git commit in cwd and store via core (fail-open)
   remind                  Session reminder (quests + API health)
   help                    Show this help
