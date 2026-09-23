@@ -1,11 +1,8 @@
 import type { FastifyInstance } from "fastify";
 import {
   applyTicketSnapshots,
-  fetchJiraTicketSnapshots,
-  listLinkedEpicKeys,
-  listLinkedTicketKeys,
+  refreshJiraFromApi,
   ticketSnapshotsInputSchema,
-  upsertEpicTitles,
 } from "@questlog/core";
 import { tryReadJiraCredentials } from "../lib/epic-titles.js";
 
@@ -42,54 +39,17 @@ export async function registerTicketRoutes(
       Array.isArray((body as { issues?: unknown }).issues) &&
       (body as { issues: unknown[] }).issues.length > 0;
 
-    let issues;
     if (hasBodyIssues) {
-      issues = ticketSnapshotsInputSchema.parse(body).issues;
-    } else {
-      const keys = await listLinkedTicketKeys();
-      if (keys.length === 0) {
-        return {
-          updated: 0,
-          markedFeita: 0,
-          unmatched: 0,
-          fetched: 0,
-          epicTitlesUpdated: 0,
-        };
-      }
-      const credentials = readJiraCredentialsFromEnv();
-      issues = await fetchJiraTicketSnapshots(credentials, keys);
-    }
-
-    if (issues.length === 0) {
+      const issues = ticketSnapshotsInputSchema.parse(body).issues;
+      const result = await applyTicketSnapshots({ issues });
       return {
-        updated: 0,
-        markedFeita: 0,
-        unmatched: 0,
-        fetched: 0,
+        ...result,
+        fetched: issues.length,
+        created: 0,
         epicTitlesUpdated: 0,
       };
     }
 
-    const result = await applyTicketSnapshots({ issues });
-
-    let epicTitlesUpdated = 0;
-    if (!hasBodyIssues) {
-      const credentials = readJiraCredentialsFromEnv();
-      const epicKeys = await listLinkedEpicKeys();
-      if (epicKeys.length > 0) {
-        const epicIssues = await fetchJiraTicketSnapshots(
-          credentials,
-          epicKeys,
-        );
-        epicTitlesUpdated = await upsertEpicTitles(
-          epicIssues.map((issue) => ({
-            epicId: issue.key,
-            title: issue.summary,
-          })),
-        );
-      }
-    }
-
-    return { ...result, fetched: issues.length, epicTitlesUpdated };
+    return refreshJiraFromApi(readJiraCredentialsFromEnv());
   });
 }
