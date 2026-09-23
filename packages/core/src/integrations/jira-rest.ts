@@ -38,69 +38,117 @@ export async function fetchJiraTicketSnapshots(
     return [];
   }
 
-  const baseUrl = credentials.baseUrl.replace(/\/+$/, "");
-  const auth = Buffer.from(
-    `${credentials.email}:${credentials.apiToken}`,
-    "utf8",
-  ).toString("base64");
-
   const snapshots: TicketSnapshot[] = [];
-
   for (let offset = 0; offset < uniqueKeys.length; offset += CHUNK_SIZE) {
     const chunk = uniqueKeys.slice(offset, offset + CHUNK_SIZE);
-    const jql = `key in (${chunk.join(",")})`;
-    let nextPageToken: string | undefined;
-
-    do {
-      const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Basic ${auth}`,
-        },
-        body: JSON.stringify({
-          jql,
-          fields: ["summary", "status", "parent"],
-          maxResults: CHUNK_SIZE,
-          ...(nextPageToken ? { nextPageToken } : {}),
-        }),
-      });
-
-      const payload = (await response.json().catch(() => null)) as
-        | JiraSearchResponse
-        | null;
-
-      if (!response.ok) {
-        const detail =
-          payload?.errorMessages?.join("; ") ||
-          payload?.message ||
-          `HTTP ${response.status}`;
-        throw new Error(`Jira search failed: ${detail}`);
-      }
-
-      for (const issue of payload?.issues ?? []) {
-        const key = issue.key?.trim();
-        const summary = issue.fields?.summary?.trim();
-        const status = issue.fields?.status?.name?.trim();
-        if (!key || !summary || !status) {
-          continue;
-        }
-        const parentKey = issue.fields?.parent?.key?.trim();
-        snapshots.push({
-          key,
-          summary,
-          status,
-          epicId: parentKey || null,
-        });
-      }
-
-      nextPageToken =
-        payload?.isLast === false ? payload.nextPageToken : undefined;
-    } while (nextPageToken);
+    snapshots.push(
+      ...(await searchJiraIssues(credentials, `key in (${chunk.join(",")})`)),
+    );
   }
+  return snapshots;
+}
+
+function jiraAuthHeader(credentials: JiraRestCredentials): string {
+  return `Basic ${Buffer.from(
+    `${credentials.email}:${credentials.apiToken}`,
+    "utf8",
+  ).toString("base64")}`;
+}
+
+async function searchJiraIssues(
+  credentials: JiraRestCredentials,
+  jql: string,
+): Promise<TicketSnapshot[]> {
+  const baseUrl = credentials.baseUrl.replace(/\/+$/, "");
+  const snapshots: TicketSnapshot[] = [];
+  let nextPageToken: string | undefined;
+
+  do {
+    const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: jiraAuthHeader(credentials),
+      },
+      body: JSON.stringify({
+        jql,
+        fields: ["summary", "status", "parent"],
+        maxResults: CHUNK_SIZE,
+        ...(nextPageToken ? { nextPageToken } : {}),
+      }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | JiraSearchResponse
+      | null;
+
+    if (!response.ok) {
+      const detail =
+        payload?.errorMessages?.join("; ") ||
+        payload?.message ||
+        `HTTP ${response.status}`;
+      throw new Error(`Jira search failed: ${detail}`);
+    }
+
+    for (const issue of payload?.issues ?? []) {
+      const key = issue.key?.trim();
+      const summary = issue.fields?.summary?.trim();
+      const status = issue.fields?.status?.name?.trim();
+      if (!key || !summary || !status) {
+        continue;
+      }
+      const parentKey = issue.fields?.parent?.key?.trim();
+      snapshots.push({
+        key,
+        summary,
+        status,
+        epicId: parentKey || null,
+      });
+    }
+
+    nextPageToken =
+      payload?.isLast === false ? payload.nextPageToken : undefined;
+  } while (nextPageToken);
 
   return snapshots;
+}
+
+/**
+ * Open issues assigned to the Jira account behind the token (`currentUser()`).
+ * Skips Done-category and Epics — those are not “new tasks I started”.
+ */
+export async function fetchJiraIssuesAssignedToMe(
+  credentials: JiraRestCredentials,
+): Promise<TicketSnapshot[]> {
+  return searchJiraIssues(
+    credentials,
+    "assignee = currentUser() AND statusCategory != Done AND issuetype != Epic",
+  );
+}
+
+/** Which of these keys are assigned to the token account (any status, incl. Done). */
+export async function fetchJiraIssueKeysAssignedToMe(
+  credentials: JiraRestCredentials,
+  keys: string[],
+): Promise<string[]> {
+  const uniqueKeys = [...new Set(keys.map((key) => key.trim()).filter(Boolean))];
+  if (uniqueKeys.length === 0) {
+    return [];
+  }
+
+  const mine: string[] = [];
+  for (let offset = 0; offset < uniqueKeys.length; offset += CHUNK_SIZE) {
+    const chunk = uniqueKeys.slice(offset, offset + CHUNK_SIZE);
+    const found = await searchJiraIssues(
+      credentials,
+      `key in (${chunk.join(",")}) AND assignee = currentUser()`,
+    );
+    for (const issue of found) {
+      mine.push(issue.key);
+    }
+  }
+  return mine;
 }
 
 type AdfNode = {

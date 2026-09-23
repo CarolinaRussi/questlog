@@ -103,12 +103,22 @@ export {
 
 export {
   fetchJiraTicketSnapshots,
+  fetchJiraIssuesAssignedToMe,
+  fetchJiraIssueKeysAssignedToMe,
   fetchJiraIssueContext,
   fetchJiraIssueContexts,
   jiraDocToPlain,
   type JiraRestCredentials,
   type JiraIssueContext,
 } from "./integrations/jira-rest.js";
+
+export {
+  refreshJiraFromApi,
+  importEpicChildren,
+  removeQuestsNotAssignedToMe,
+  keysNotInAssigned,
+  type RefreshJiraResult,
+} from "./use-cases/refresh-jira.js";
 
 export {
   generateEpicNotesWithGemini,
