@@ -15,6 +15,7 @@ import {
   type Profile,
   type Quest,
   type QuestStatus,
+  type RefreshTicketsResult,
 } from "../../shared/lib/api";
 import { EpicDetailPanel } from "./EpicDetailPanel";
 import { PauseQuestPanel } from "./PauseQuestPanel";
@@ -24,6 +25,41 @@ type QuestBoardProps = {
   onOpenSettings: () => void;
   onOpenArchive?: () => void;
 };
+
+function refreshTicketsFeedback(result: RefreshTicketsResult): string {
+  const created = result.created ?? 0;
+  const removed = result.removed ?? 0;
+  if (result.fetched === 0 && created === 0 && removed === 0) {
+    return "Nenhuma ticket para atualizar.";
+  }
+
+  const parts: string[] = [];
+  if (result.fetched > 0) {
+    parts.push(`Tickets atualizados: ${result.updated}`);
+    if (result.epicLinked > 0) {
+      parts.push(`${result.epicLinked} com épico`);
+    }
+    if (result.markedFeita > 0) {
+      parts.push(`${result.markedFeita} marcadas feitas`);
+    }
+    if (result.epicTitlesUpdated) {
+      parts.push(`${result.epicTitlesUpdated} nome(s) de épico`);
+    }
+  }
+  if (created > 0) {
+    parts.push(
+      created === 1 ? "1 nova no quadro" : `${created} novas no quadro`,
+    );
+  }
+  if (removed > 0) {
+    parts.push(
+      removed === 1
+        ? "1 que não é sua saiu"
+        : `${removed} que não são suas saíram`,
+    );
+  }
+  return parts.join(" · ");
+}
 
 type Surface =
   | { kind: "idle" }
@@ -58,6 +94,7 @@ export function QuestBoard({
 
   const invalidateBoard = () => {
     void queryClient.invalidateQueries({ queryKey: ["board-home"] });
+    void queryClient.invalidateQueries({ queryKey: ["board-archive"] });
     void queryClient.invalidateQueries({ queryKey: ["board-revision"] });
     void queryClient.invalidateQueries({ queryKey: ["commits"] });
     void queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -168,20 +205,7 @@ export function QuestBoard({
     mutationFn: refreshTickets,
     onSuccess: (result) => {
       setErrorFeedback(null);
-      setFeedback(
-        result.fetched === 0
-          ? "Nenhuma ticket para atualizar."
-          : `Tickets atualizados: ${result.updated}` +
-              (result.epicLinked > 0
-                ? ` · ${result.epicLinked} com épico`
-                : "") +
-              (result.markedFeita > 0
-                ? ` · ${result.markedFeita} marcadas feitas`
-                : "") +
-              (result.epicTitlesUpdated
-                ? ` · ${result.epicTitlesUpdated} nome(s) de épico`
-                : ""),
-      );
+      setFeedback(refreshTicketsFeedback(result));
       invalidateBoard();
     },
     onError: (error) => {

@@ -214,6 +214,8 @@ export type RefreshTicketsResult = {
   epicLinked: number;
   unmatched: number;
   fetched: number;
+  created?: number;
+  removed?: number;
   epicTitlesUpdated?: number;
 };
 
