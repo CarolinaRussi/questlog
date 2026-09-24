@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   activateQuest,
   completeQuest,
@@ -211,10 +211,18 @@ export function QuestBoard({
     onError: (error) => {
       setFeedback(null);
       setErrorFeedback(
-        error instanceof Error ? error.message : "Erro ao atualizar tickets",
+        error instanceof Error ? error.message : "Erro ao sincronizar com o Jira",
       );
     },
   });
+
+  useEffect(() => {
+    if (!feedback) {
+      return;
+    }
+    const timer = window.setTimeout(() => setFeedback(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
 
   const home = homeQuery.data;
   const selectedQuest =
@@ -296,7 +304,7 @@ export function QuestBoard({
             disabled={refreshMutation.isPending}
             onClick={() => refreshMutation.mutate()}
           >
-            {refreshMutation.isPending ? "Atualizando…" : "Status Jira"}
+            {refreshMutation.isPending ? "Sincronizando…" : "Sincronizar com o Jira"}
           </button>
           <button
             type="button"
