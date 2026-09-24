@@ -69,7 +69,7 @@ Quando o comando no Cursor parece um **`git commit`** bem-sucedido:
 
 1. Usa o `cwd` do evento (repo do commit)
 2. Roda `pnpm --filter @questlog/cli ingest-commit` nesse diretório
-3. Se a mensagem/branch tiver um ticket **novo** e atribuído a você, cria a quest via Jira (sem clicar Status Jira)
+3. Se a mensagem/branch tiver um ticket **novo** e atribuído a você, cria a quest via Jira (sem clicar Sincronizar com o Jira)
 
 **Silencioso** (fail-open): o git commit não quebra e o Cursor não mostra aviso.  
 O commit fica gravado pra entrar no resumo do épico.

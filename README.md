@@ -12,8 +12,8 @@ A unidade do quadro é a **quest** (“estou nisso”), não o card do Jira. Tí
 
 - Mostra o que está **em aberto** pra você: quests em andamento, pausadas, arquivadas. Sem varrer backlog dos outros.
 - Na hora de pausar, pede o que **falta** para finalizar a quest. É o recado que você lê quando voltar a mexer na tarefa, para não se perder.
-- O **Status Jira** atualiza o que já está no quadro e puxa issues **abertas no seu nome**. O épico entra só como contexto das *suas* tarefas. Card do time, sem responsável ou de outra pessoa não entra (e o refresh tira o que tiver vindo por engano).
-- Se você usa Cursor, o `git commit` entra no resumo do épico (Gemini). Se for um ticket **novo no seu nome**, o hook cria a quest sozinho — sem clicar Status Jira.
+- **Sincronizar com o Jira** atualiza o que já está no quadro e puxa issues **abertas no seu nome**. O épico entra só como contexto das *suas* tarefas. Card do time, sem responsável ou de outra pessoa não entra (e o refresh tira o que tiver vindo por engano).
+- Se você usa Cursor, o `git commit` entra no resumo do épico (Gemini). Se for um ticket **novo no seu nome**, o hook cria a quest sozinho — sem clicar Sincronizar com o Jira.
 
 Ele não substitui o Jira e não é o backlog do time. É o seu caderno ao lado.
 
@@ -44,7 +44,7 @@ O instalador não adivinha seus repositórios nem seu Jira. No quadro, **Setting
 
 Token e chave ficam **só neste PC**. Outro computador = configurar de novo.
 
-Se o **Status Jira** pedir credencial: Settings → Jira. Isso não vai no GitHub.
+Se **Sincronizar com o Jira** pedir credencial: Settings → Jira. Isso não vai no GitHub.
 
 ## Todo dia
 
@@ -52,7 +52,7 @@ O app deve abrir uns 20 s depois do login. Se não abrir, usa o atalho **QuestLo
 
 - Olha **Em andamento** e **Pausadas**
 - Ao pausar, escreve o que **falta**
-- **Status Jira** quando quiser puxar o que caiu no seu nome e atualizar o que já está no quadro
+- **Sincronizar com o Jira** quando quiser puxar o que caiu no seu nome e atualizar o que já está no quadro
 
 Dados (quadro, tokens): `C:\Users\SEU-USUARIO\AppData\Roaming\questlog`
 
