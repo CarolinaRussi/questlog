@@ -1,4 +1,5 @@
 import { Quest } from "../db/entities/quest.entity.js";
+import type { QuestStatus } from "../domain/types.js";
 import { normalizeTicketId } from "./ticket-match.js";
 import { getProfile } from "./profile.js";
 import { ProfileRequiredError } from "./quest.js";
@@ -14,21 +15,38 @@ export type ApplyTicketSnapshotsResult = {
   unmatched: number;
 };
 
-function isExternalDone(statusName: string): boolean {
+/** Map an external ticket status label onto a quest status. */
+export function mapExternalTicketStatus(
+  statusName: string,
+): QuestStatus | "skip" {
   const normalized = statusName.trim().toLowerCase();
-  return (
+  if (
     normalized === "concluído" ||
     normalized === "concluido" ||
     normalized === "finalizado" ||
     normalized === "done" ||
     normalized === "closed" ||
     normalized === "fechado"
-  );
+  ) {
+    return "feita";
+  }
+  if (normalized === "cancelado" || normalized === "cancelled") {
+    return "skip";
+  }
+  if (
+    normalized === "em andamento" ||
+    normalized === "in progress" ||
+    normalized === "em progresso"
+  ) {
+    return "ativa";
+  }
+  return "pausada";
 }
 
 /**
- * Update existing quests from external ticket snapshots (title + status label).
- * Does not create quests, does not clear `falta`, does not mirror descriptions.
+ * Update existing quests from external ticket snapshots (title + status).
+ * In Progress → ativa, Done → feita. Does not create quests, does not
+ * clear `falta`, does not mirror descriptions, does not auto-pause.
  */
 export async function applyTicketSnapshots(
   raw: unknown,
@@ -131,9 +149,12 @@ function applySnapshotToQuest(
     }
   }
 
-  if (isExternalDone(issue.status) && previousStatus !== "feita") {
+  const mapped = mapExternalTicketStatus(issue.status);
+  if (mapped === "feita" && previousStatus !== "feita") {
     quest.status = "feita";
     becameFeita = true;
+  } else if (mapped === "ativa" && previousStatus === "pausada") {
+    quest.status = "ativa";
   }
 
   return { becameFeita, epicLinked };

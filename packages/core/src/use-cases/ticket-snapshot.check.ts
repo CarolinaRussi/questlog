@@ -59,14 +59,16 @@ try {
   assert.equal(refreshed?.epicId, "DEMO-100");
   assert.ok(refreshed?.ticketSyncedAt);
   assert.equal(refreshed?.falta, "não apagar isto");
-  assert.equal(refreshed?.status, "pausada");
+  assert.equal(refreshed?.status, "ativa");
 
   const doneQuest = await getQuest(otherQuest.id);
   assert.equal(doneQuest?.status, "feita");
   assert.equal(doneQuest?.ticketStatus, "Done");
 
   await dataSource.destroy();
-  console.log("check:ticket-snapshot ok — update + epic + falta preserved + done");
+  console.log(
+    "check:ticket-snapshot ok — in progress resumes + epic + falta preserved + done",
+  );
 } finally {
   rmSync(tempDir, { recursive: true, force: true });
 }

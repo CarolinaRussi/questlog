@@ -6,6 +6,7 @@ import {
   jiraImportFileSchema,
   type JiraIssueImport,
 } from "./jira-import.schemas.js";
+import { mapExternalTicketStatus } from "./ticket-snapshot.js";
 
 export type ImportJiraResult = {
   created: number;
@@ -13,29 +14,6 @@ export type ImportJiraResult = {
   skippedCancelled: number;
   byStatus: Record<QuestStatus, number>;
 };
-
-function mapJiraStatus(statusName: string): QuestStatus | "skip" {
-  const normalized = statusName.trim().toLowerCase();
-  if (
-    normalized === "concluído" ||
-    normalized === "concluido" ||
-    normalized === "finalizado" ||
-    normalized === "done"
-  ) {
-    return "feita";
-  }
-  if (normalized === "cancelado" || normalized === "cancelled") {
-    return "skip";
-  }
-  if (
-    normalized === "em andamento" ||
-    normalized === "in progress" ||
-    normalized === "em progresso"
-  ) {
-    return "ativa";
-  }
-  return "pausada";
-}
 
 export async function importJiraIssues(
   raw: unknown,
@@ -81,7 +59,7 @@ async function importOneIssue(
     return;
   }
 
-  const mapped = mapJiraStatus(issue.status);
+  const mapped = mapExternalTicketStatus(issue.status);
   if (mapped === "skip") {
     result.skippedCancelled += 1;
     return;
