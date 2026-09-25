@@ -14,6 +14,9 @@ type JiraSearchIssue = {
     summary?: string;
     status?: { name?: string };
     parent?: { key?: string };
+    comment?: {
+      comments?: Array<{ body?: unknown }>;
+    };
   };
 };
 
@@ -73,7 +76,7 @@ async function searchJiraIssues(
       },
       body: JSON.stringify({
         jql,
-        fields: ["summary", "status", "parent"],
+        fields: ["summary", "status", "parent", "comment"],
         maxResults: CHUNK_SIZE,
         ...(nextPageToken ? { nextPageToken } : {}),
       }),
@@ -99,11 +102,17 @@ async function searchJiraIssues(
         continue;
       }
       const parentKey = issue.fields?.parent?.key?.trim();
+      const comments = issue.fields?.comment?.comments ?? [];
+      const lastComment = comments.at(-1);
+      const statusReason = lastComment
+        ? jiraDocToPlain(lastComment.body).slice(0, 500)
+        : "";
       snapshots.push({
         key,
         summary,
         status,
         epicId: parentKey || null,
+        statusReason: statusReason || null,
       });
     }
 

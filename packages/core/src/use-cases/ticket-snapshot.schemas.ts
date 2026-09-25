@@ -7,6 +7,8 @@ export const ticketSnapshotSchema = z.object({
   status: z.string().trim().min(1),
   /** Parent/epic key when known (e.g. Jira parent). */
   epicId: z.string().trim().min(1).nullable().optional(),
+  /** Why the ticket is waiting (Jira transition comment). */
+  statusReason: z.string().trim().min(1).nullable().optional(),
 });
 
 export const ticketSnapshotsInputSchema = z.object({

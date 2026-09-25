@@ -65,6 +65,46 @@ try {
   assert.equal(doneQuest?.status, "feita");
   assert.equal(doneQuest?.ticketStatus, "Done");
 
+  const scheduledQuest = await createQuest({
+    titulo: "Vai pra prod",
+    ticketIds: ["DEMO-3"],
+  });
+  const scheduled = await applyTicketSnapshots({
+    issues: [
+      {
+        key: "DEMO-3",
+        summary: "Deploy",
+        status: "Scheduled",
+        statusReason: "Irá para produção no dia 28/09",
+      },
+    ],
+  });
+  assert.equal(scheduled.updated, 1);
+  const waiting = await getQuest(scheduledQuest.id);
+  assert.equal(waiting?.status, "pausada");
+  assert.equal(waiting?.falta, "Irá para produção no dia 28/09");
+  assert.equal(waiting?.faltaSource, "import");
+
+  const userPaused = await createQuest({
+    titulo: "Minha pausa",
+    ticketIds: ["DEMO-4"],
+  });
+  await pauseQuest(userPaused.id, { falta: "esperando o time" });
+  await applyTicketSnapshots({
+    issues: [
+      {
+        key: "DEMO-4",
+        summary: "Minha pausa",
+        status: "Blocked",
+        statusReason: "motivo do Jira",
+      },
+    ],
+  });
+  const stillMine = await getQuest(userPaused.id);
+  assert.equal(stillMine?.status, "pausada");
+  assert.equal(stillMine?.falta, "esperando o time");
+  assert.equal(stillMine?.faltaSource, "user");
+
   await dataSource.destroy();
   console.log(
     "check:ticket-snapshot ok — in progress resumes + epic + falta preserved + done",

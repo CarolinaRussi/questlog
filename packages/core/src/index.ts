@@ -45,6 +45,7 @@ export {
 
 export {
   isImportFaltaStub,
+  visibleFalta,
   isAccompaniedQuest,
   pickNextFaltaForEpic,
   listAccompaniedQuests,

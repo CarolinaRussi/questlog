@@ -15,6 +15,24 @@ export function isImportFaltaStub(falta: string): boolean {
   return falta.trim().startsWith("Status no Jira:");
 }
 
+/** User pause note, or a real Jira waiting reason — not the import stub. */
+export function visibleFalta(quest: {
+  falta: string;
+  faltaSource: "user" | "import" | null;
+}): string {
+  const text = quest.falta.trim();
+  if (!text) {
+    return "";
+  }
+  if (quest.faltaSource === "user") {
+    return text;
+  }
+  if (quest.faltaSource === "import" && !isImportFaltaStub(text)) {
+    return text;
+  }
+  return "";
+}
+
 export function isAccompaniedQuest(
   quest: Quest,
   options?: { hasCommits?: boolean; activeQuestId?: string | null },
@@ -57,17 +75,14 @@ export function pickNextFaltaForEpic(
   if (active) {
     return {
       questId: active.id,
-      falta: active.faltaSource === "user" ? active.falta : "",
+      falta: visibleFalta(active),
       titulo: active.titulo,
     };
   }
 
   const pausedWithFalta = open
     .filter(
-      (quest) =>
-        quest.status === "pausada" &&
-        quest.faltaSource === "user" &&
-        quest.falta.trim().length > 0,
+      (quest) => quest.status === "pausada" && visibleFalta(quest).length > 0,
     )
     .sort(
       (left, right) =>
@@ -80,10 +95,7 @@ export function pickNextFaltaForEpic(
   }
   return {
     questId: picked.id,
-    falta:
-      picked.faltaSource === "user" && picked.falta.trim()
-        ? picked.falta
-        : "",
+    falta: visibleFalta(picked),
     titulo: picked.titulo,
   };
 }

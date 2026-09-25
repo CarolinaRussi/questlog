@@ -9,6 +9,7 @@ import { createQuest, pauseQuest } from "./quest.js";
 import {
   isAccompaniedQuest,
   isImportFaltaStub,
+  visibleFalta,
   listAccompaniedQuests,
   pickNextFaltaForEpic,
   promoteEpic,
@@ -21,6 +22,17 @@ const databasePath = join(tempDir, "questlog.db");
 try {
   assert.equal(isImportFaltaStub("Status no Jira: To Do"), true);
   assert.equal(isImportFaltaStub("terminar login"), false);
+  assert.equal(
+    visibleFalta({
+      falta: "Irá para produção no dia 28/09",
+      faltaSource: "import",
+    }),
+    "Irá para produção no dia 28/09",
+  );
+  assert.equal(
+    visibleFalta({ falta: "Status no Jira: Scheduled", faltaSource: "import" }),
+    "",
+  );
 
   const dataSource = await initDb({ databasePath });
   await upsertProfile({

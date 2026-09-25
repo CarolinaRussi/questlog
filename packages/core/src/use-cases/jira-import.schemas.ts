@@ -5,6 +5,7 @@ export const jiraIssueImportSchema = z.object({
   summary: z.string().min(1),
   status: z.string().min(1),
   epicId: z.string().min(1).nullable().optional(),
+  statusReason: z.string().trim().min(1).nullable().optional(),
 });
 
 export const jiraImportFileSchema = z.object({

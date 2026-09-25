@@ -43,10 +43,28 @@ export function mapExternalTicketStatus(
   return "pausada";
 }
 
+/** Jira statuses that mean “waiting” — pause and keep the why. */
+export function isWaitingTicketStatus(statusName: string): boolean {
+  const normalized = statusName.trim().toLowerCase();
+  return (
+    normalized === "scheduled" ||
+    normalized === "blocked" ||
+    normalized === "bloqueado" ||
+    normalized === "paused" ||
+    normalized === "pausada" ||
+    normalized === "em pausa" ||
+    normalized === "on hold" ||
+    normalized === "waiting" ||
+    normalized === "aguardando"
+  );
+}
+
 /**
  * Update existing quests from external ticket snapshots (title + status).
- * In Progress → ativa, Done → feita. Does not create quests, does not
- * clear `falta`, does not mirror descriptions, does not auto-pause.
+ * In Progress → ativa, Done → feita, Scheduled/Blocked/Paused → pausada.
+ * Waiting comment fills import `falta` unless the user already wrote one.
+ * Does not create quests, does not clear user `falta`, does not mirror
+ * descriptions, does not auto-pause To Do.
  */
 export async function applyTicketSnapshots(
   raw: unknown,
@@ -155,6 +173,13 @@ function applySnapshotToQuest(
     becameFeita = true;
   } else if (mapped === "ativa" && previousStatus === "pausada") {
     quest.status = "ativa";
+  } else if (isWaitingTicketStatus(issue.status) && previousStatus !== "feita") {
+    quest.status = "pausada";
+    if (quest.faltaSource !== "user") {
+      const reason = issue.statusReason?.trim() ?? "";
+      quest.falta = reason || `Status no Jira: ${issue.status}`;
+      quest.faltaSource = "import";
+    }
   }
 
   return { becameFeita, epicLinked };

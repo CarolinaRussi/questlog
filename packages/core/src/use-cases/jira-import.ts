@@ -6,7 +6,10 @@ import {
   jiraImportFileSchema,
   type JiraIssueImport,
 } from "./jira-import.schemas.js";
-import { mapExternalTicketStatus } from "./ticket-snapshot.js";
+import {
+  isWaitingTicketStatus,
+  mapExternalTicketStatus,
+} from "./ticket-snapshot.js";
 
 export type ImportJiraResult = {
   created: number;
@@ -65,6 +68,11 @@ async function importOneIssue(
     return;
   }
 
+  const waitingReason =
+    isWaitingTicketStatus(issue.status) && issue.statusReason?.trim()
+      ? issue.statusReason.trim()
+      : "";
+
   const quest = Quest.create({
     profileId,
     titulo: `[${issue.key}] ${issue.summary}`,
@@ -73,8 +81,10 @@ async function importOneIssue(
     epicId: issue.epicId ? issue.epicId.trim().toUpperCase() : null,
     epicScope: "partial",
     repos: [],
-    falta: mapped === "pausada" ? `Status no Jira: ${issue.status}` : "",
-    faltaSource: mapped === "pausada" ? "import" : null,
+    falta:
+      waitingReason ||
+      (mapped === "pausada" ? `Status no Jira: ${issue.status}` : ""),
+    faltaSource: mapped === "pausada" || waitingReason ? "import" : null,
     watching: false,
     atualizadoEm: new Date(),
   });

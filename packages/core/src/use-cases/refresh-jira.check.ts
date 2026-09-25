@@ -70,6 +70,23 @@ try {
   assert.equal(backlog.status, "pausada");
   assert.equal(backlog.epicId, "DEMO-100");
 
+  const scheduledImport = await importEpicChildren([
+    {
+      key: "DEMO-11",
+      summary: "Vai pra prod",
+      status: "Scheduled",
+      epicId: "DEMO-100",
+      statusReason: "Irá para produção no dia 28/09",
+    },
+  ]);
+  assert.equal(scheduledImport, 1);
+  const scheduledQuest = (await listQuests()).find((quest) =>
+    quest.ticketIds.includes("DEMO-11"),
+  );
+  assert.equal(scheduledQuest?.status, "pausada");
+  assert.equal(scheduledQuest?.falta, "Irá para produção no dia 28/09");
+  assert.equal(scheduledQuest?.faltaSource, "import");
+
   assert.equal(byTicket.get("DEMO-1")?.titulo, "Já no quadro");
 
   const skippedAgain = await importEpicChildren([
