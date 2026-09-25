@@ -4,6 +4,7 @@ import { config as loadEnv } from "dotenv";
 import { getDataDir, hydrateJiraSecretsFromEnv, initDb } from "@questlog/core";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
+import { startJiraStartupSync } from "./lib/jira-startup-sync.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 loadEnv({ path: join(getDataDir(), ".env") });
@@ -17,3 +18,4 @@ const app = await buildApp();
 await app.listen({ host: config.host, port: config.port });
 
 app.log.info(`QuestLog API on http://${config.host}:${config.port}`);
+startJiraStartupSync(app.log);
