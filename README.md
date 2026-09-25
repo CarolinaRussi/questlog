@@ -50,9 +50,10 @@ Se **Sincronizar com o Jira** pedir credencial: Settings → Jira. Isso não vai
 
 O app deve abrir uns 20 s depois do login. Se não abrir, usa o atalho **QuestLog** da Área de Trabalho.
 
+- Ao abrir, sincroniza com o Jira sozinho (o quadro atualiza em seguida)
 - Olha **Em andamento** e **Pausadas**
 - Ao pausar, escreve o que **falta**
-- **Sincronizar com o Jira** quando quiser puxar o que caiu no seu nome e atualizar o que já está no quadro
+- **Sincronizar com o Jira** se quiser puxar de novo sem fechar o app
 
 Dados (quadro, tokens): `C:\Users\SEU-USUARIO\AppData\Roaming\questlog`
 

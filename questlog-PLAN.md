@@ -257,14 +257,14 @@ Entregar **uma fatia por vez**; review + commit antes da próxima.
 | Fatia | Escopo | Commit sugerido |
 |-------|--------|-----------------|
 | **3.1** | Migration + campos na quest: `ticket_status`, `ticket_synced_at` | `feat(core): add quest ticket sync columns` |
-| **3.2** | `core`: `applyTicketSnapshots` — casa key→quest, atualiza título/status; In Progress→`ativa`; Done→`feita`; não cria quests novas; não apaga `falta`; não pausa sozinho | `feat(core): apply external ticket snapshots` |
+| **3.2** | `core`: `applyTicketSnapshots` — casa key→quest, atualiza título/status; In Progress→`ativa`; Done→`feita`; Scheduled/Blocked/Paused→`pausada` + comentário de espera em `falta` (não sobrescreve falta da usuária); não cria quests novas; não pausa To Do sozinho | `feat(core): apply external ticket snapshots` |
 | **3.3** | Cliente REST Jira (summary+status) + CLI `refresh-jira` (env ou `--file`) | `feat(cli): refresh-jira from rest or file` |
 | **3.4** | `POST /api/tickets/refresh` (usa env; aplica snapshots) | `feat(server): expose ticket refresh endpoint` |
 | **3.5** | Web: badge de status externo + botão “Atualizar tickets” | `feat(web): show ticket status and refresh action` |
 
 Critério de pronto = **3.1–3.5** verdes. Sync contínuo / webhooks = fora.
 
-**Depois da Fase 3:** o botão **Sincronizar com o Jira** (live REST, sem `--file`) cria quests só para issues abertas atribuídas à conta Jira (`assignee = currentUser()`, sem Done/Epic). O épico entra como contexto das *suas* tarefas — não importa o card do time no mesmo épico. Refresh remove do quadro **e do arquivo** tickets que não estão atribuídas a ela (incl. sem responsável); mantém as Done que são dela. `applyTicketSnapshots` em si continua sem criar.
+**Depois da Fase 3:** o botão **Sincronizar com o Jira** (live REST, sem `--file`) cria quests só para issues abertas atribuídas à conta Jira (`assignee = currentUser()`, sem Done/Epic). O épico entra como contexto das *suas* tarefas — não importa o card do time no mesmo épico. Refresh remove do quadro **e do arquivo** tickets que não estão atribuídas a ela (incl. sem responsável); mantém as Done que são dela. `applyTicketSnapshots` em si continua sem criar. Na subida da API o mesmo refresh roda **uma vez** em background (fail-open se faltar credencial ou o Jira falhar). Sync contínuo / webhooks = fora.
 
 ### Fase 5 — Épico + resumo inteligente (Gemini, chave do usuário)
 
