@@ -9,6 +9,7 @@ import {
   type Quest,
   type QuestStatus,
 } from "../../shared/lib/api";
+import { visibleQuestFalta } from "../../shared/lib/falta";
 
 type EpicDetailPanelProps = {
   epicId: string;
@@ -68,8 +69,8 @@ export function EpicDetailPanel({
         .map(
           (quest) =>
             `- ${quest.titulo} [${statusLabel(quest.status)}]` +
-            (quest.faltaSource === "user" && quest.falta
-              ? ` — falta: ${quest.falta}`
+            (visibleQuestFalta(quest)
+              ? ` — falta: ${visibleQuestFalta(quest)}`
               : ""),
         )
         .join("\n");
@@ -92,10 +93,7 @@ export function EpicDetailPanel({
 
   const geminiConfigured = secretsQuery.data?.geminiConfigured ?? false;
   const faltaQuests = quests.filter(
-    (quest) =>
-      quest.status !== "feita" &&
-      quest.faltaSource === "user" &&
-      quest.falta.trim().length > 0,
+    (quest) => quest.status !== "feita" && visibleQuestFalta(quest).length > 0,
   );
 
   const memoryBlock = (

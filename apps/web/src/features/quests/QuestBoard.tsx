@@ -17,6 +17,7 @@ import {
   type QuestStatus,
   type RefreshTicketsResult,
 } from "../../shared/lib/api";
+import { visibleQuestFalta } from "../../shared/lib/falta";
 import { EpicDetailPanel } from "./EpicDetailPanel";
 import { PauseQuestPanel } from "./PauseQuestPanel";
 
@@ -779,6 +780,7 @@ function QuestDetailPanel({
   onResume: () => void;
   onFinish: () => void;
 }) {
+  const faltaLine = visibleQuestFalta(quest);
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -822,12 +824,12 @@ function QuestDetailPanel({
         </div>
       ) : null}
 
-      {quest.faltaSource === "user" && quest.falta.trim() ? (
+      {faltaLine ? (
         <div className="rounded-xl px-3 py-3" style={{ background: "#f0fdf4" }}>
           <p className="text-xs font-semibold uppercase tracking-wide">
             O que falta
           </p>
-          <p className="mt-1 text-base font-medium">{quest.falta}</p>
+          <p className="mt-1 text-base font-medium">{faltaLine}</p>
         </div>
       ) : null}
 
@@ -859,6 +861,7 @@ function QuestRow({
   onFinish: () => void;
   busy: boolean;
 }) {
+  const faltaLine = visibleQuestFalta(quest);
   return (
     <div
       className="flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-3"
@@ -871,8 +874,8 @@ function QuestRow({
         <p className="font-medium">{quest.titulo}</p>
         <p className="text-sm" style={{ color: "var(--ql-muted)" }}>
           {statusLabel(quest.status)}
-          {quest.faltaSource === "user" && quest.falta
-            ? ` · falta: ${quest.falta.slice(0, 60)}${quest.falta.length > 60 ? "…" : ""}`
+          {faltaLine
+            ? ` · falta: ${faltaLine.slice(0, 60)}${faltaLine.length > 60 ? "…" : ""}`
             : ""}
           <span className="ml-1 font-semibold" style={{ color: "var(--ql-accent)" }}>
             · abrir
@@ -1086,9 +1089,7 @@ function pickNextFaltaLocal(
   const pausedWithFalta = quests
     .filter(
       (quest) =>
-        quest.status === "pausada" &&
-        quest.faltaSource === "user" &&
-        quest.falta.trim().length > 0,
+        quest.status === "pausada" && visibleQuestFalta(quest).length > 0,
     )
     .sort(
       (left, right) =>
@@ -1100,8 +1101,7 @@ function pickNextFaltaLocal(
   return {
     questId: picked.id,
     titulo: picked.titulo,
-    falta:
-      picked.faltaSource === "user" && picked.falta.trim() ? picked.falta : "",
+    falta: visibleQuestFalta(picked),
   };
 }
 
