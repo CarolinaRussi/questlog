@@ -4,10 +4,11 @@ import { ProfileSettings } from "./features/profile/ProfileSettings";
 import { ProfileWizard } from "./features/profile/ProfileWizard";
 import { ArchiveBoard } from "./features/quests/ArchiveBoard";
 import { QuestBoard } from "./features/quests/QuestBoard";
+import { SprintHistoryView } from "./features/sprint/SprintHistoryView";
 import { fetchHealth, fetchProfile } from "./shared/lib/api";
 import { useBoardLiveSync } from "./shared/lib/use-board-live-sync";
 
-type Screen = "board" | "archive" | "settings";
+type Screen = "board" | "archive" | "settings" | "sprint";
 
 export function App() {
   const [screen, setScreen] = useState<Screen>("board");
@@ -79,6 +80,10 @@ export function App() {
         />
       ) : null}
 
+      {!apiDown && !loading && profileQuery.data && screen === "sprint" ? (
+        <SprintHistoryView onBack={() => setScreen("board")} />
+      ) : null}
+
       {!apiDown && !loading && profileQuery.data && screen === "archive" ? (
         <ArchiveBoard
           profile={profileQuery.data}
@@ -91,6 +96,7 @@ export function App() {
           profile={profileQuery.data}
           onOpenSettings={() => setScreen("settings")}
           onOpenArchive={() => setScreen("archive")}
+          onOpenSprint={() => setScreen("sprint")}
         />
       ) : null}
     </main>

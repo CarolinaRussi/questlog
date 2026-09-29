@@ -18,6 +18,7 @@ import {
   type RefreshTicketsResult,
 } from "../../shared/lib/api";
 import { visibleQuestFalta } from "../../shared/lib/falta";
+import { SprintHomeCard } from "../sprint/SprintHomeCard";
 import { EpicDetailPanel } from "./EpicDetailPanel";
 import { PauseQuestPanel } from "./PauseQuestPanel";
 
@@ -25,6 +26,7 @@ type QuestBoardProps = {
   profile: Profile;
   onOpenSettings: () => void;
   onOpenArchive?: () => void;
+  onOpenSprint?: () => void;
 };
 
 function refreshTicketsFeedback(result: RefreshTicketsResult): string {
@@ -74,6 +76,7 @@ export function QuestBoard({
   profile,
   onOpenSettings,
   onOpenArchive,
+  onOpenSprint,
 }: QuestBoardProps) {
   const queryClient = useQueryClient();
   const [surface, setSurface] = useState<Surface>({ kind: "idle" });
@@ -317,6 +320,10 @@ export function QuestBoard({
           </button>
         </div>
       </header>
+
+      {onOpenSprint ? (
+        <SprintHomeCard onOpenSprint={onOpenSprint} />
+      ) : null}
 
       {feedback ? (
         <div

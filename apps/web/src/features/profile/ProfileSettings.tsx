@@ -7,6 +7,7 @@ import {
 import { GeminiSettings } from "./GeminiSettings";
 import { JiraSettings } from "./JiraSettings";
 import { ProfileForm } from "./ProfileForm";
+import { SprintSettings } from "../sprint/SprintSettings";
 
 type ProfileSettingsProps = {
   profile: Profile;
@@ -44,6 +45,8 @@ export function ProfileSettings({ profile, onBack }: ProfileSettingsProps) {
       <JiraSettings />
 
       <GeminiSettings />
+
+      <SprintSettings />
 
       <ProfileForm
         key={profile.id}

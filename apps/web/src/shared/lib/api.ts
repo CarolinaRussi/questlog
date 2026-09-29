@@ -392,3 +392,72 @@ export function ticketHref(baseUrl: string, ticketId: string): string | null {
   if (!baseUrl.trim()) return null;
   return `${baseUrl.replace(/\/?$/, "/")}${ticketId}`;
 }
+
+export type SprintWindowView = {
+  rotulo: string | null;
+  inicio: string;
+  fim: string;
+};
+
+export type SprintCurrentResponse = {
+  window: SprintWindowView | null;
+  resumo: string;
+  pendingQuestIds: string[];
+  pendingCount: number;
+};
+
+export type SprintHistoryEntry = {
+  id: string;
+  rotulo: string | null;
+  inicio: string;
+  fim: string;
+  fechadaEm: string;
+  resumo: string;
+  includedQuestIds: string[];
+};
+
+export type ComplementSprintSummaryResult = {
+  resumo: string;
+  addedQuestCount: number;
+  usedGemini: boolean;
+};
+
+export async function fetchSprintCurrent(): Promise<SprintCurrentResponse> {
+  const response = await fetch("/api/sprint/current");
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as SprintCurrentResponse;
+}
+
+export async function fetchSprintHistory(): Promise<SprintHistoryEntry[]> {
+  const response = await fetch("/api/sprint/history");
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as SprintHistoryEntry[];
+}
+
+export async function saveSprintWindow(body: {
+  rotulo?: string | null;
+  inicio: string;
+  fim: string;
+}): Promise<{ window: SprintWindowView }> {
+  const response = await fetch("/api/sprint/window", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as { window: SprintWindowView };
+}
+
+export async function complementSprintSummary(): Promise<ComplementSprintSummaryResult> {
+  const response = await fetch("/api/sprint/complement", { method: "POST" });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return (await response.json()) as ComplementSprintSummaryResult;
+}
