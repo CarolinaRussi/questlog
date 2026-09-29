@@ -9,6 +9,7 @@ import { QuestTicketSync20260922140000 } from "./migrations/20260922140000-quest
 import { EpicNotes20260922150000 } from "./migrations/20260922150000-epic-notes.js";
 import { QuestWatching20260922160000 } from "./migrations/20260922160000-quest-watching.js";
 import { EpicNoteTitle20260922170000 } from "./migrations/20260922170000-epic-note-title.js";
+import { QuestCompletedAt20260929180000 } from "./migrations/20260929180000-quest-completed-at.js";
 
 const BUSY_TIMEOUT_MS = 5000;
 
@@ -26,6 +27,7 @@ export function createDataSource(databasePath: string): DataSource {
       EpicNotes20260922150000,
       QuestWatching20260922160000,
       EpicNoteTitle20260922170000,
+      QuestCompletedAt20260929180000,
     ],
     migrationsTableName: "typeorm_migrations",
   });

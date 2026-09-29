@@ -171,6 +171,9 @@ function applySnapshotToQuest(
   if (mapped === "feita" && previousStatus !== "feita") {
     quest.status = "feita";
     becameFeita = true;
+    applyQuestCompletedAt(quest, issue, previousStatus, now);
+  } else if (mapped === "feita") {
+    applyQuestCompletedAt(quest, issue, previousStatus, now);
   } else if (mapped === "ativa" && previousStatus === "pausada") {
     quest.status = "ativa";
   } else if (isWaitingTicketStatus(issue.status) && previousStatus !== "feita") {
@@ -183,4 +186,32 @@ function applySnapshotToQuest(
   }
 
   return { becameFeita, epicLinked };
+}
+
+function resolvedAtFromSnapshot(issue: TicketSnapshot, fallback: Date): Date {
+  if (!issue.completedAt) {
+    return fallback;
+  }
+  const parsed = new Date(issue.completedAt);
+  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
+}
+
+function applyQuestCompletedAt(
+  quest: Quest,
+  issue: TicketSnapshot,
+  previousStatus: QuestStatus,
+  now: Date,
+): void {
+  const mapped = mapExternalTicketStatus(issue.status);
+  if (mapped !== "feita") {
+    return;
+  }
+  const resolved = resolvedAtFromSnapshot(issue, now);
+  if (previousStatus !== "feita") {
+    quest.concluidaEm = resolved;
+    return;
+  }
+  if (!quest.concluidaEm && issue.completedAt) {
+    quest.concluidaEm = resolved;
+  }
 }

@@ -73,6 +73,14 @@ async function importOneIssue(
       ? issue.statusReason.trim()
       : "";
 
+  const now = new Date();
+  const concluidaEm =
+    mapped === "feita"
+      ? issue.completedAt
+        ? new Date(issue.completedAt)
+        : now
+      : null;
+
   const quest = Quest.create({
     profileId,
     titulo: `[${issue.key}] ${issue.summary}`,
@@ -86,7 +94,8 @@ async function importOneIssue(
       (mapped === "pausada" ? `Status no Jira: ${issue.status}` : ""),
     faltaSource: mapped === "pausada" || waitingReason ? "import" : null,
     watching: false,
-    atualizadoEm: new Date(),
+    concluidaEm,
+    atualizadoEm: now,
   });
   await quest.save();
   knownTickets.add(key);

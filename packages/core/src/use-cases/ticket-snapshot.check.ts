@@ -44,7 +44,12 @@ try {
         epicId: "DEMO-100",
       },
       { key: "DEMO-99", summary: "Orfã", status: "To Do" },
-      { key: "DEMO-2", summary: "Fechou", status: "Done" },
+      {
+        key: "DEMO-2",
+        summary: "Fechou",
+        status: "Done",
+        completedAt: "2026-09-20T12:00:00.000Z",
+      },
     ],
   });
 
@@ -64,6 +69,10 @@ try {
   const doneQuest = await getQuest(otherQuest.id);
   assert.equal(doneQuest?.status, "feita");
   assert.equal(doneQuest?.ticketStatus, "Done");
+  assert.equal(
+    doneQuest?.concluidaEm?.toISOString(),
+    "2026-09-20T12:00:00.000Z",
+  );
 
   const scheduledQuest = await createQuest({
     titulo: "Vai pra prod",

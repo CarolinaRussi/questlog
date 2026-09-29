@@ -1,4 +1,5 @@
 import type { TicketSnapshot } from "../use-cases/ticket-snapshot.schemas.js";
+import { mapExternalTicketStatus } from "../use-cases/ticket-snapshot.js";
 
 export type JiraRestCredentials = {
   baseUrl: string;
@@ -13,6 +14,7 @@ type JiraSearchIssue = {
   fields?: {
     summary?: string;
     status?: { name?: string };
+    resolutiondate?: string | null;
     parent?: { key?: string };
     comment?: {
       comments?: Array<{ body?: unknown }>;
@@ -76,7 +78,7 @@ async function searchJiraIssues(
       },
       body: JSON.stringify({
         jql,
-        fields: ["summary", "status", "parent", "comment"],
+        fields: ["summary", "status", "resolutiondate", "parent", "comment"],
         maxResults: CHUNK_SIZE,
         ...(nextPageToken ? { nextPageToken } : {}),
       }),
@@ -113,6 +115,7 @@ async function searchJiraIssues(
         status,
         epicId: parentKey || null,
         statusReason: statusReason || null,
+        completedAt: parseJiraTimestampIso(issue.fields?.resolutiondate),
       });
     }
 
@@ -120,7 +123,122 @@ async function searchJiraIssues(
       payload?.isLast === false ? payload.nextPageToken : undefined;
   } while (nextPageToken);
 
-  return snapshots;
+  return enrichMissingCompletedAt(credentials, snapshots);
+}
+
+export function parseJiraTimestampIso(value: unknown): string | null {
+  if (value == null) {
+    return null;
+  }
+  if (typeof value !== "string" || !value.trim()) {
+    return null;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date.toISOString();
+}
+
+type JiraChangelogHistory = {
+  created?: string;
+  items?: Array<{ field?: string; toString?: string }>;
+};
+
+type JiraChangelog = {
+  histories?: JiraChangelogHistory[];
+};
+
+/** Newest Done-style status transition from Jira issue changelog. */
+export function extractDoneTransitionAtIso(changelog: JiraChangelog): string | null {
+  const histories = [...(changelog.histories ?? [])].sort((left, right) => {
+    const leftTime = Date.parse(left.created ?? "");
+    const rightTime = Date.parse(right.created ?? "");
+    return rightTime - leftTime;
+  });
+
+  for (const history of histories) {
+    const created = history.created?.trim();
+    if (!created) {
+      continue;
+    }
+    for (const item of history.items ?? []) {
+      if (item.field?.toLowerCase() !== "status") {
+        continue;
+      }
+      const toStatus = item.toString?.trim() ?? "";
+      if (mapExternalTicketStatus(toStatus) !== "feita") {
+        continue;
+      }
+      const iso = parseJiraTimestampIso(created);
+      if (iso) {
+        return iso;
+      }
+    }
+  }
+  return null;
+}
+
+async function enrichMissingCompletedAt(
+  credentials: JiraRestCredentials,
+  snapshots: TicketSnapshot[],
+): Promise<TicketSnapshot[]> {
+  const enriched: TicketSnapshot[] = [];
+  for (const snapshot of snapshots) {
+    if (
+      mapExternalTicketStatus(snapshot.status) === "feita" &&
+      !snapshot.completedAt
+    ) {
+      const fromChangelog = await fetchJiraIssueCompletedAtIso(
+        credentials,
+        snapshot.key,
+      );
+      enriched.push(
+        fromChangelog
+          ? { ...snapshot, completedAt: fromChangelog }
+          : snapshot,
+      );
+      continue;
+    }
+    enriched.push(snapshot);
+  }
+  return enriched;
+}
+
+async function fetchJiraIssueCompletedAtIso(
+  credentials: JiraRestCredentials,
+  issueKey: string,
+): Promise<string | null> {
+  const baseUrl = credentials.baseUrl.replace(/\/+$/, "");
+  const key = issueKey.trim();
+  const response = await fetch(
+    `${baseUrl}/rest/api/3/issue/${encodeURIComponent(key)}?fields=resolutiondate&expand=changelog`,
+    {
+      headers: {
+        Accept: "application/json",
+        Authorization: jiraAuthHeader(credentials),
+      },
+    },
+  );
+
+  const payload = (await response.json().catch(() => null)) as
+    | {
+        fields?: { resolutiondate?: string | null };
+        changelog?: JiraChangelog;
+        errorMessages?: string[];
+        message?: string;
+      }
+    | null;
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const fromResolution = parseJiraTimestampIso(payload?.fields?.resolutiondate);
+  if (fromResolution) {
+    return fromResolution;
+  }
+  return extractDoneTransitionAtIso(payload?.changelog ?? {});
 }
 
 /**

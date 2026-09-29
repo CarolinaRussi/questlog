@@ -145,6 +145,7 @@ export async function completeQuest(questId: string): Promise<Quest> {
 
   quest.status = "feita";
   quest.watching = false;
+  quest.concluidaEm = new Date();
   touch(quest);
   await quest.save();
 

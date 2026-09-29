@@ -23,6 +23,7 @@
     "check:ticket-match": "tsx src/use-cases/ticket-match.check.ts",
     "check:seed": "tsx src/use-cases/seed.check.ts",
     "check:ticket-snapshot": "tsx src/use-cases/ticket-snapshot.check.ts",
+    "check:jira-resolution": "tsx src/integrations/jira-resolution.check.ts",
     "check:refresh-jira": "tsx src/use-cases/refresh-jira.check.ts",
     "check:secrets": "tsx src/use-cases/secrets.check.ts",
     "check:complement-epic-notes": "tsx src/use-cases/complement-epic-notes.check.ts",

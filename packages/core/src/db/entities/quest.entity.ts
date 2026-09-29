@@ -51,6 +51,10 @@ export class Quest extends BaseEntity {
   @Column({ name: "ticket_synced_at", type: "datetime", nullable: true })
   ticketSyncedAt!: Date | null;
 
+  /** When the quest was marked done (app) or closed on the ticket (Jira sync). */
+  @Column({ name: "concluida_em", type: "datetime", nullable: true })
+  concluidaEm!: Date | null;
+
   @Column({ name: "atualizado_em", type: "datetime" })
   atualizadoEm!: Date;
 

@@ -224,5 +224,6 @@ function snapshotToImport(issue: TicketSnapshot) {
     status: issue.status,
     epicId: issue.epicId,
     statusReason: issue.statusReason,
+    completedAt: issue.completedAt,
   };
 }

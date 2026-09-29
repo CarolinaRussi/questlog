@@ -60,6 +60,8 @@ try {
   await setActiveQuest(quest.id);
   const completed = await completeQuest(quest.id);
   assert.equal(completed.status, "feita");
+  assert.ok(completed.concluidaEm);
+  assert.ok(completed.concluidaEm.getTime() <= Date.now());
 
   await dataSource.destroy();
   console.log("check:quest ok — crud + pause/resume/complete");
