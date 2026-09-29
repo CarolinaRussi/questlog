@@ -174,6 +174,13 @@ export {
 } from "./use-cases/complement-epic-notes.js";
 
 export {
+  complementSprintSummary,
+  formatQuestsAsSprintList,
+  type ComplementSprintSummaryResult,
+  type SprintSummaryGenerator,
+} from "./use-cases/complement-sprint-summary.js";
+
+export {
   getLocalSecrets,
   getLocalSecretsPublic,
   upsertLocalSecrets,

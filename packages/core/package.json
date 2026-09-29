@@ -29,6 +29,7 @@
     "check:refresh-jira": "tsx src/use-cases/refresh-jira.check.ts",
     "check:secrets": "tsx src/use-cases/secrets.check.ts",
     "check:complement-epic-notes": "tsx src/use-cases/complement-epic-notes.check.ts",
+    "check:complement-sprint-summary": "tsx src/use-cases/complement-sprint-summary.check.ts",
     "check:accompanied": "tsx src/use-cases/accompanied.check.ts"
   },
   "dependencies": {
