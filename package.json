@@ -5,7 +5,7 @@
   "packageManager": "pnpm@10.19.0",
   "scripts": {
     "setup": "pnpm install && pnpm --filter @questlog/core build",
-    "start": "pnpm --filter @questlog/core build && pnpm --parallel --filter @questlog/server --filter @questlog/web start",
+    "start": "pnpm --filter @questlog/core build && node scripts/open-web.mjs && pnpm --parallel --filter @questlog/server --filter @questlog/web start",
     "desktop": "pnpm --filter @questlog/core build && pnpm --filter @questlog/web build && pnpm --filter @questlog/desktop start",
     "desktop:pack": "pnpm --filter @questlog/desktop run pack:win",
     "desktop:startup": "pnpm --filter @questlog/desktop run startup",

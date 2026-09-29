@@ -16,6 +16,9 @@ let serverProcess = null;
 /** @type {BrowserWindow | null} */
 let mainWindow = null;
 let stopping = false;
+let serverStartedByApp = false;
+/** @type {string} */
+let boardUrl = BOARD_URL;
 
 function resolveRuntime() {
   if (app.isPackaged) {
@@ -37,6 +40,7 @@ function resolveRuntime() {
   const serverEntry = join(repoRoot, "apps/server/src/index.ts");
   const tsxCliCandidates = [
     join(repoRoot, "apps/server/node_modules/tsx/dist/cli.mjs"),
+    join(repoRoot, "packages/core/node_modules/tsx/dist/cli.mjs"),
     join(repoRoot, "node_modules/tsx/dist/cli.mjs"),
   ];
   const tsxCli = tsxCliCandidates.find((candidate) => existsSync(candidate));
@@ -83,6 +87,7 @@ function assertReadyToStart(runtime) {
 function startServer() {
   const runtime = resolveRuntime();
   assertReadyToStart(runtime);
+  serverStartedByApp = true;
 
   serverProcess = spawn(runtime.nodeBinary, runtime.serverArgs, {
     cwd: runtime.cwd,
@@ -107,17 +112,38 @@ function startServer() {
   });
 }
 
+async function isApiHealthy() {
+  try {
+    const response = await fetch(`${BOARD_URL}/api/health`);
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function servesQuestLogUi(baseUrl) {
+  try {
+    const response = await fetch(baseUrl);
+    if (!response.ok) {
+      return false;
+    }
+    const html = await response.text();
+    return html.includes('id="root"') || html.includes("QuestLog");
+  } catch {
+    return false;
+  }
+}
+
 async function waitForHealth(timeoutMs = 30_000) {
   const startedAt = Date.now();
   let lastError = /** @type {unknown} */ (null);
 
   while (Date.now() - startedAt < timeoutMs) {
     try {
-      const response = await fetch(`${BOARD_URL}/api/health`);
-      if (response.ok) {
+      if (await isApiHealthy()) {
         return;
       }
-      lastError = new Error(`health status ${response.status}`);
+      lastError = new Error("health check failed");
     } catch (error) {
       lastError = error;
     }
@@ -128,6 +154,29 @@ async function waitForHealth(timeoutMs = 30_000) {
     `QuestLog API did not become ready at ${BOARD_URL}/api/health: ${
       lastError instanceof Error ? lastError.message : String(lastError)
     }`,
+  );
+}
+
+async function resolveBoardUrl() {
+  if (!(await isApiHealthy())) {
+    return BOARD_URL;
+  }
+
+  if (await servesQuestLogUi(BOARD_URL)) {
+    return BOARD_URL;
+  }
+
+  const viteUrl = "http://localhost:5173";
+  if (await servesQuestLogUi(viteUrl)) {
+    console.log(
+      `API already on ${BOARD_URL}; opening Vite UI at ${viteUrl} (pnpm start).`,
+    );
+    return viteUrl;
+  }
+
+  throw new Error(
+    `A API já responde em ${BOARD_URL}, mas a UI não abriu. ` +
+      `Use pnpm desktop sozinha (feche outros terminais do QuestLog) ou abra http://localhost:5173 no navegador.`,
   );
 }
 
@@ -159,7 +208,7 @@ function createWindow() {
     mainWindow = null;
   });
 
-  void mainWindow.loadURL(BOARD_URL);
+  void mainWindow.loadURL(boardUrl);
 }
 
 function stopServer() {
@@ -193,9 +242,19 @@ function focusMainWindow() {
 }
 
 async function boot() {
-  startServer();
-  await waitForHealth();
+  if (await isApiHealthy()) {
+    boardUrl = await resolveBoardUrl();
+    console.log(`QuestLog API already running; UI at ${boardUrl}`);
+  } else {
+    startServer();
+    await waitForHealth();
+    boardUrl = BOARD_URL;
+  }
   createWindow();
+}
+
+if (process.platform === "win32") {
+  app.setAppUserModelId("dev.questlog.app");
 }
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
@@ -216,7 +275,9 @@ if (!gotSingleInstanceLock) {
 }
 
 app.on("before-quit", () => {
-  stopServer();
+  if (serverStartedByApp) {
+    stopServer();
+  }
 });
 
 app.on("window-all-closed", () => {

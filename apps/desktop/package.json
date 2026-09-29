@@ -5,7 +5,8 @@
   "type": "module",
   "main": "src/main.mjs",
   "scripts": {
-    "start": "electron .",
+    "start": "node scripts/launch.mjs",
+    "start:electron": "electron .",
     "prepare-pack": "node scripts/prepare-pack.mjs",
     "pack:win": "node scripts/prepare-pack.mjs && electron-builder --win portable dir --publish never",
     "startup": "node scripts/install-startup.mjs",
