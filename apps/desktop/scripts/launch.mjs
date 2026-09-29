@@ -7,7 +7,9 @@ const desktopDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const packagedCandidates = [
   join(desktopDir, "release/QuestLog.exe"),
+  join(desktopDir, "release2/QuestLog.exe"),
   join(desktopDir, "release/win-unpacked/QuestLog.exe"),
+  join(desktopDir, "release2/win-unpacked/QuestLog.exe"),
 ];
 
 function launchPackaged(exePath) {

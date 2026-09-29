@@ -22,4 +22,5 @@ tmp/
 # Desktop pack artifacts (local)
 apps/desktop/pack-staging/
 apps/desktop/release/
+apps/desktop/release2/
 apps/desktop/.cache/
