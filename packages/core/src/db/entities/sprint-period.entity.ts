@@ -25,4 +25,14 @@ export class SprintPeriod extends BaseEntity {
 
   @Column({ name: "fechada_em", type: "datetime" })
   fechadaEm!: Date;
+
+  @Column({ name: "resumo_text", type: "text", default: "" })
+  resumoText!: string;
+
+  @Column({
+    name: "included_quest_ids_json",
+    type: "simple-json",
+    default: "[]",
+  })
+  includedQuestIds!: string[];
 }

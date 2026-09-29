@@ -12,6 +12,7 @@ import { EpicNoteTitle20260922170000 } from "./migrations/20260922170000-epic-no
 import { QuestCompletedAt20260929180000 } from "./migrations/20260929180000-quest-completed-at.js";
 import { ProfileSprintWindow20260929181000 } from "./migrations/20260929181000-profile-sprint-window.js";
 import { SprintPeriods20260929181100 } from "./migrations/20260929181100-sprint-periods.js";
+import { SprintSummaryFields20260929182000 } from "./migrations/20260929182000-sprint-summary-fields.js";
 import { SprintPeriod } from "./entities/sprint-period.entity.js";
 
 const BUSY_TIMEOUT_MS = 5000;
@@ -33,6 +34,7 @@ export function createDataSource(databasePath: string): DataSource {
       QuestCompletedAt20260929180000,
       ProfileSprintWindow20260929181000,
       SprintPeriods20260929181100,
+      SprintSummaryFields20260929182000,
     ],
     migrationsTableName: "typeorm_migrations",
   });

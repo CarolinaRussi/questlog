@@ -38,6 +38,17 @@ export {
 } from "./use-cases/sprint-window.schemas.js";
 
 export {
+  sprintWindowUtcBounds,
+  isConcluidaEmInWindow,
+  listCompletedQuestsInWindow,
+  listPendingQuestsForCurrentSprint,
+  listPendingQuestsForClosedSprint,
+  getClosedSprintPeriod,
+  appendIncludedQuestsToCurrentSprint,
+  SprintPeriodNotFoundError,
+} from "./use-cases/sprint-summary.js";
+
+export {
   listQuests,
   getQuest,
   createQuest,

@@ -97,12 +97,16 @@ export async function archiveCurrentSprintWindow(): Promise<SprintPeriod> {
     inicio: profile.sprintInicio,
     fim: profile.sprintFim,
     fechadaEm: new Date(),
+    resumoText: profile.sprintResumoText,
+    includedQuestIds: [...profile.sprintIncludedQuestIds],
   });
   await archived.save();
 
   profile.sprintInicio = null;
   profile.sprintFim = null;
   profile.sprintRotulo = null;
+  profile.sprintResumoText = "";
+  profile.sprintIncludedQuestIds = [];
   await profile.save();
 
   return archived;

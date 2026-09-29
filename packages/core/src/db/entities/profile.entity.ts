@@ -52,6 +52,16 @@ export class Profile extends BaseEntity {
   @Column({ name: "sprint_rotulo", type: "text", nullable: true })
   sprintRotulo!: string | null;
 
+  @Column({ name: "sprint_resumo_text", type: "text", default: "" })
+  sprintResumoText!: string;
+
+  @Column({
+    name: "sprint_included_quest_ids_json",
+    type: "simple-json",
+    default: "[]",
+  })
+  sprintIncludedQuestIds!: string[];
+
   @CreateDateColumn({ name: "created_at", type: "datetime" })
   createdAt!: Date;
 
