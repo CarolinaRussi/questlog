@@ -7,6 +7,7 @@ export { Profile } from "./db/entities/profile.entity.js";
 export { Quest } from "./db/entities/quest.entity.js";
 export { Commit } from "./db/entities/commit.entity.js";
 export { EpicNote } from "./db/entities/epic-note.entity.js";
+export { SprintPeriod } from "./db/entities/sprint-period.entity.js";
 
 export type {
   QuestStatus,
@@ -21,6 +22,20 @@ export {
   upsertProfileInputSchema,
   type UpsertProfileInput,
 } from "./use-cases/profile.schemas.js";
+
+export {
+  getCurrentSprintWindow,
+  upsertCurrentSprintWindow,
+  clearCurrentSprintWindow,
+  archiveCurrentSprintWindow,
+  listClosedSprintPeriods,
+  SprintWindowNotConfiguredError,
+} from "./use-cases/sprint-window.js";
+export {
+  sprintWindowInputSchema,
+  type SprintWindowInput,
+  type SprintWindowView,
+} from "./use-cases/sprint-window.schemas.js";
 
 export {
   listQuests,

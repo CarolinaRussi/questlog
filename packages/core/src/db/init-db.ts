@@ -8,6 +8,7 @@ import { Commit } from "./entities/commit.entity.js";
 import { EpicNote } from "./entities/epic-note.entity.js";
 import { Profile } from "./entities/profile.entity.js";
 import { Quest } from "./entities/quest.entity.js";
+import { SprintPeriod } from "./entities/sprint-period.entity.js";
 
 export type InitDbOptions = {
   databasePath?: string;
@@ -25,6 +26,7 @@ export async function initDb(options: InitDbOptions = {}): Promise<DataSource> {
   Quest.useDataSource(dataSource);
   Commit.useDataSource(dataSource);
   EpicNote.useDataSource(dataSource);
+  SprintPeriod.useDataSource(dataSource);
 
   return dataSource;
 }

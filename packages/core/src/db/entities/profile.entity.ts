@@ -43,6 +43,15 @@ export class Profile extends BaseEntity {
   @Column({ name: "active_quest_id", type: "text", nullable: true })
   activeQuestId!: string | null;
 
+  @Column({ name: "sprint_inicio", type: "datetime", nullable: true })
+  sprintInicio!: Date | null;
+
+  @Column({ name: "sprint_fim", type: "datetime", nullable: true })
+  sprintFim!: Date | null;
+
+  @Column({ name: "sprint_rotulo", type: "text", nullable: true })
+  sprintRotulo!: string | null;
+
   @CreateDateColumn({ name: "created_at", type: "datetime" })
   createdAt!: Date;
 
