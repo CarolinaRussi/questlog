@@ -7,6 +7,8 @@ import {
   type SprintWindowInput,
   type SprintWindowView,
 } from "./sprint-window.schemas.js";
+import { complementSprintSummary } from "./complement-sprint-summary.js";
+import { sprintWindowUtcBounds } from "./sprint-summary.js";
 
 export class SprintWindowNotConfiguredError extends Error {
   constructor() {
@@ -110,4 +112,40 @@ export async function archiveCurrentSprintWindow(): Promise<SprintPeriod> {
   await profile.save();
 
   return archived;
+}
+
+export type FinalizeExpiredSprintResult = {
+  complemented: boolean;
+  archived: boolean;
+};
+
+/** After manual sprint end date: complement (fail-open) then archive. */
+export async function finalizeExpiredCurrentSprint(): Promise<FinalizeExpiredSprintResult | null> {
+  const profile = await getProfile();
+  if (!profile?.sprintInicio || !profile.sprintFim) {
+    return null;
+  }
+
+  const { end } = sprintWindowUtcBounds(profile.sprintInicio, profile.sprintFim);
+  if (new Date() <= end) {
+    return null;
+  }
+
+  let complemented = false;
+  try {
+    const result = await complementSprintSummary();
+    complemented = result.addedQuestCount > 0 || Boolean(result.resumo.trim());
+  } catch {
+    // fail-open
+  }
+
+  let archived = false;
+  try {
+    await archiveCurrentSprintWindow();
+    archived = true;
+  } catch {
+    // fail-open
+  }
+
+  return { complemented, archived };
 }

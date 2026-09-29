@@ -29,7 +29,9 @@ export {
   clearCurrentSprintWindow,
   archiveCurrentSprintWindow,
   listClosedSprintPeriods,
+  finalizeExpiredCurrentSprint,
   SprintWindowNotConfiguredError,
+  type FinalizeExpiredSprintResult,
 } from "./use-cases/sprint-window.js";
 export {
   sprintWindowInputSchema,

@@ -4,6 +4,7 @@ import {
   GeminiNotConfiguredError,
   ProfileRequiredError,
   QuestNotFoundError,
+  SprintWindowNotConfiguredError,
 } from "@questlog/core";
 import { JiraCredentialsMissingError } from "../routes/tickets.routes.js";
 
@@ -30,6 +31,13 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (error instanceof JiraCredentialsMissingError) {
       return reply.status(400).send({
         error: "jira_credentials_missing",
+        message: error.message,
+      });
+    }
+
+    if (error instanceof SprintWindowNotConfiguredError) {
+      return reply.status(400).send({
+        error: "sprint_window_not_configured",
         message: error.message,
       });
     }
