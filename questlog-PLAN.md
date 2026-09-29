@@ -46,6 +46,7 @@ Instalável = Electron (fase 4): mesmo `core`, mesma API, outro invólucro. Taur
 | **Branch** | Fio técnico; a quest lista `repo → branch` |
 | **Pendência (`falta`)** | Texto “o que falta” ao pausar — evita perder contexto |
 | **Inbox** | Destino de commits que não casaram com quest |
+| **Sprint (resumo)** | Intervalo **manual** nas Settings; texto incremental do que você **fechou** no QuestLog nesse intervalo (data de fechamento enriquecida pelo Jira quando existir) |
 
 ---
 
@@ -315,6 +316,35 @@ Decisões travadas:
 | **6.6** | Web: empty guiado + Arquivo (épicos/sugestões/busca) + promote | `feat(web): archive and guided empty state` |
 
 Critério de pronto = **6.1–6.6** verdes.
+
+### Fase 7 — Sprint pessoal + resumo incremental
+
+Job: **retrospectiva sua** por sprint (currículo / 1:1 / memória), sem virar relatório do time no Jira. Fonte = quests **feitas no QuestLog** no intervalo da sprint, não backlog alheio.
+
+Decisões travadas:
+- **Período da sprint** é **manual** nas Settings (início, fim, rótulo opcional). **Não** puxar datas de sprint board do Jira.
+- **Jira entra na data de fechamento**: ao sincronizar Done, ler do card **quando** a issue foi encerrada (ex. `resolutiondate` ou transição para Done no changelog) e gravar em **`concluida_em`** na quest. Marcar feita no app usa “agora”. Sem Jira ou sem data no card, fica a data local do QuestLog.
+- **Histórico**: cada sprint **manual** fechada guarda registro local (`sprint_summaries` ou equivalente): intervalo, rótulo, texto do resumo, lista de quests já “consumidas” pelo resumo.
+- **Incremental** (mesma filosofia do épico): botão manual ou fechamento automático **não reconta** tarefas já incluídas; só quests **novas** que viraram `feita` (dentro da janela, por `concluida_em`) desde a última complementação entram no texto (Gemini **complementa**, não reescreve do zero).
+- **Botão manual** (“Atualizar resumo da sprint”): gera/atualiza o resumo do **período atual** com o que foi feito **até agora** (útil no meio da sprint).
+- **Automático no fim**: quando a **data fim manual** passou, complementação final **fail-open** (startup da API / abrir app); ao iniciar nova sprint manual, novo registro de histórico (sprint anterior fechada).
+- **Home**: bloco compacto com **resumo da sprint atual** (texto truncado + link “ver sprint” / histórico); não empurrar lista de tickets feitos para o 1º viewport.
+- **`concluida_em`** é a âncora para “entrou nesta sprint?” (não `atualizado_em`, que muda em sync de título/status).
+- Sem chave Gemini: resumo = lista legível das quests novas (título + tickets + épico) + copiar; com Gemini = parágrafo curto incremental.
+- **Não** espelhar sprint board do time; **não** incluir cards que nunca viraram quest feita **sua** no QuestLog.
+
+| Fatia | Escopo | Commit sugerido |
+|-------|--------|-----------------|
+| **7.1** | Migration `concluida_em` + preenchimento ao marcar feita no app; ao sync Done, buscar data de resolução/fechamento no Jira; backfill conservador | `feat(core): quest completed timestamp with jira resolution` |
+| **7.2** | Settings/perfil: sprint **manual** (início/fim/rótulo), sprint “atual” vs histórico fechado, persistência local | `feat(core): manual sprint window in profile` |
+| **7.3** | Entity histórico de sprint + `included_quest_ids` + listar quests feitas na janela (`concluida_em`) ainda não incluídas | `feat(core): sprint summary records and pending quests` |
+| **7.4** | `complementSprintSummary` (template sem IA + Gemini incremental) + check | `feat(core): complement sprint summary incrementally` |
+| **7.5** | Server: GET sprint atual + histórico; POST complement manual; startup detecta **data fim manual** passada (fail-open) | `feat(server): sprint summary api and auto complement` |
+| **7.6** | Web Settings (intervalo manual) + home “Sprint atual” + histórico + botão atualizar resumo | `feat(web): sprint summary on home settings and history` |
+
+Critério de pronto = **7.1–7.6** verdes. Board de sprint do Jira / burndown / velocity = fora.
+
+**Ordem sugerida:** depois de **6.x** estável e **5.x** (Gemini) se quiser resumo em prosa; **7.4** pode shippar lista sem IA antes de Gemini.
 
 ### Fase 4 — App instalável (Electron)
 
