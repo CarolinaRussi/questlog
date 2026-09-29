@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -34,11 +34,19 @@ if (result.status !== 0) {
 }
 
 const portable = join(desktopDir, outputDir, "QuestLog.exe");
-const pinnedTarget = join(desktopDir, "release/QuestLog.exe");
+const pinnedPortable = join(desktopDir, "release/QuestLog.exe");
+const unpackedSrc = join(desktopDir, outputDir, "win-unpacked");
+const unpackedDest = join(desktopDir, "release/win-unpacked");
+
 if (outputDir !== "release" && existsSync(portable)) {
-  mkdirSync(dirname(pinnedTarget), { recursive: true });
-  copyFileSync(portable, pinnedTarget);
-  console.log(`Copied portable to ${pinnedTarget} (taskbar pin target).`);
+  mkdirSync(dirname(pinnedPortable), { recursive: true });
+  copyFileSync(portable, pinnedPortable);
+  console.log(`Copied portable to ${pinnedPortable}.`);
+}
+
+if (outputDir !== "release" && existsSync(unpackedSrc)) {
+  cpSync(unpackedSrc, unpackedDest, { recursive: true, force: true });
+  console.log(`Synced win-unpacked to ${unpackedDest} (best for taskbar pin).`);
 }
 
 console.log(`Pack done: ${join(desktopDir, outputDir)}`);

@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, dialog } from "electron";
 
 const desktopDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(desktopDir, "../../..");
@@ -157,7 +157,7 @@ async function waitForHealth(timeoutMs = 30_000) {
   );
 }
 
-async function resolveBoardUrl() {
+async function resolveBoardUrlForDev() {
   if (!(await isApiHealthy())) {
     return BOARD_URL;
   }
@@ -178,6 +178,14 @@ async function resolveBoardUrl() {
     `A API já responde em ${BOARD_URL}, mas a UI não abriu. ` +
       `Use pnpm desktop sozinha (feche outros terminais do QuestLog) ou abra http://localhost:5173 no navegador.`,
   );
+}
+
+function showBootError(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(message);
+  if (app.isReady()) {
+    dialog.showErrorBox("QuestLog não abriu", message);
+  }
 }
 
 function resolveAppIcon() {
@@ -242,8 +250,12 @@ function focusMainWindow() {
 }
 
 async function boot() {
-  if (await isApiHealthy()) {
-    boardUrl = await resolveBoardUrl();
+  if (app.isPackaged) {
+    startServer();
+    await waitForHealth();
+    boardUrl = BOARD_URL;
+  } else if (await isApiHealthy()) {
+    boardUrl = await resolveBoardUrlForDev();
     console.log(`QuestLog API already running; UI at ${boardUrl}`);
   } else {
     startServer();
@@ -267,7 +279,7 @@ if (!gotSingleInstanceLock) {
 
   app.whenReady().then(() => {
     void boot().catch((error) => {
-      console.error(error);
+      showBootError(error);
       stopServer();
       app.exit(1);
     });
